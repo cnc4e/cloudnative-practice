@@ -46,12 +46,12 @@
 
 # プラクティス
 
-1. [準備](docs/setup.md)
-1. [CloudNativeの基礎](docs/cloudnative.md)
-1. [構成管理](docs/configuration.md)
-1. [コンテナ](docs/container.md)
-1. [CI/CD](docs/cicd.md)
-1. [オブザーバビリティ](docs/observability.md)
+1. [環境セットアップ](docs/setup.md)
+2. [CloudNativeの基礎](docs/cloudnative.md)
+3. [構成管理](docs/configuration.md)
+4. [コンテナ](docs/container.md)
+5. [CI/CD](docs/cicd.md)
+6. [オブザーバビリティ](docs/observability.md)
 
 - 可用性
   - ヘルスチェック

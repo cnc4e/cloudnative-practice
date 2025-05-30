@@ -22,10 +22,11 @@
     - [docker](#docker)
     - [helm](#helm)
 - [リポジトリの準備](#リポジトリの準備)
+  - [空のリポジトリを作成](#空のリポジトリを作成)
   - [cnc4eのリポジトリをクローン](#cnc4eのリポジトリをクローン)
-  - [リポジトリのプライベート化](#リポジトリのプライベート化)
-  - [(任意)レビュアーを追加](#任意レビュアーを追加)
   - [自身のGitHubアカウントのリポジトリをクローン](#自身のgithubアカウントのリポジトリをクローン)
+  - [(任意)レビュアーを追加](#任意レビュアーを追加)
+  - [(任意)ユーザー名・パスワードの省略](#任意ユーザー名パスワードの省略)
 - [プラクティスの開始](#プラクティスの開始)
 
 # GitHubの準備
@@ -35,7 +36,7 @@ GitHubの個人アカウントを持っていない場合は次の公式ドキ�
 
 ## PATの作成
 
-GitHubの個人アクセストークン(PAT)を作成します。次の公式ドキュメントを参考に作成してください。[GitHub での個人用アクセストークンの作成](https://docs.github.com/ja/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
+GitHubアカウントの個人アクセストークン(PAT)を持っていない場合は次の公式ドキュメントを参考に作成してください。[GitHub での個人用アクセストークンの作成](https://docs.github.com/ja/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 
 権限は以下が最低限ついていればいいです。
 
@@ -127,12 +128,27 @@ helm version
 インストールされていない場合、次を参考にインストールしてください。[Helmのインストール](https://helm.sh/docs/intro/install/)
 
 # リポジトリの準備
-## cnc4eのリポジトリをクローン
+
+CNC4Eのリポジトリをコピーして自身のGitHubアカウントにプライベートなリポジトリを作成します。
 
 > **なぜフォークしないのか？**  
 > プラクティス用のリポジトリに間違えて機微な情報をコミットしてしまった場合の影響を抑えるためフォークではなくプライベートな新しいリポジトリを作成します。
 
-cnc4eのリポジトリをクローンします。任意のディレクトリで以下のコマンドを実行してください。
+## 空のリポジトリを作成
+
+自身のGitHubアカウントにプライベートな空のリポジトリを作成します。以下の手順で行います。
+
+- 自身のGitHubアカウントで[GitHub](https://github.com/)にログイン
+- 左メニューから`New`を選択
+  ![create-repo-1](./images/create-repo-1.png)
+- 以下の情報を入力して`Create repository`をクリック
+  - Repository name: `cloudnative-practice`
+  - Visibility: `Private`
+  ![create-repo-2](./images/create-repo-2.png)
+
+## cnc4eのリポジトリをクローン
+
+**cnc4e**のリポジトリをクローンします。任意のディレクトリで以下のコマンドを実行してください。
 
 ``` sh
 git clone --bare https://github.com/cnc4e/cloudnative-practice.git
@@ -141,41 +157,18 @@ git clone --bare https://github.com/cnc4e/cloudnative-practice.git
 クローンしたディレクトリに移動し、自身のGitHubアカウントに新しいリポジトリを作成します。以下のコマンドを実行してください。
 
 ``` sh
-cd cloudnative-practice
+cd cloudnative-practice.git
 git push --mirror https://github.com/{あなたのGitHubアカウント名}/cloudnative-practice.git
+Username for 'https://github.com': {あなたのGitHubアカウント名}
+Password for 'https://{あなたのGitHubアカウント名}@github.com': {あなたのGitHubアカウントのPAT}
 ```
 
 自身のGitHubアカウントにリポジトリを作成したら一旦クローンしたディレクトリを削除します。
 
 ``` sh
 cd ..
-rm -rf cloudnative-practice
+rm -rf cloudnative-practice.git
 ```
-
-## リポジトリのプライベート化
-
-自身のGitHubアカウントに作成したリポジトリをプライベートに設定します。以下の手順で行います。
-
-- 自身のGitHubアカウントで[GitHub](https://github.com/)にログイン
-- 作成したリポジトリ`cloudnative-practice`のページに移動
-- ``Settings``タブをクリック
-- 左側のメニューから``General``を選択
-- ``Danger Zone``セクションまでスクロール
-- ``Change repository visibility``をクリック
-- ``Private``を選択し、確認のためにリポジトリ名を入力
-- ``I understand the consequences, change repository visibility``をクリック
-
-## (任意)レビュアーを追加
-
-プラクティスは一人で進めることもできますが他の人にレビューしてもらうことでより良いコードを書くことができます。
-レビュアーを追加する場合、以下の手順で行います。
-
-- 自身のGitHubアカウントでGitHubにログイン
-- 作成したリポジトリ`cloudnative-practice`のページに移動
-- ``Settings``タブをクリック
-- 左側のメニューから``Collaborators and teams``を選択
-- ``Add people``をクリック
-- レビュアーにしたいGitHubアカウント名を入力し、``Add``をクリック
 
 ## 自身のGitHubアカウントのリポジトリをクローン
 
@@ -183,6 +176,8 @@ rm -rf cloudnative-practice
 
 ``` sh
 git clone https://github.com/{あなたのGitHubアカウント名}/cloudnative-practice.git
+Username for 'https://github.com': {あなたのGitHubアカウント名}
+Password for 'https://{あなたのGitHubアカウント名}@github.com': {あなたのGitHubアカウントのPAT}
 ```
 
 cnc4eのリポジトリをupstreamとして追加
@@ -197,6 +192,38 @@ cnc4eのリポジトリで更新があった場合、以下のコマンドで最
 ``` sh
 git fetch upstream
 git merge upstream/main
+```
+
+## (任意)レビュアーを追加
+
+プラクティスは一人で進めることもできますが他の人にレビューしてもらうことでより良いコードを書くことができます。
+レビュアーを追加する場合、以下の手順で行います。
+
+- 自身のGitHubアカウントでGitHubにログイン
+- 作成したリポジトリ`cloudnative-practice`のページに移動
+- ``Settings``タブをクリック
+  ![review-1](./images/review-1.png)
+- 左側のメニューから``Collaborators``を選択
+  ![review-2](./images/review-2.png)
+- ``Add people``をクリック
+  ![review-3](./images/review-3.png)
+- レビュアーにしたいGitHubアカウント名**Find people**を入力し、``Add ``をクリック
+  ![review-4](./images/review-4.png)
+- 追加したレビューア宛てにGitHubから招待メールが送信されます。レビュアーはそのメールを受け取り、承認することでリポジトリにアクセスできるようになります。
+  ![review-5](./images/review-5.png)  
+  ![review-6](./images/review-6.png)
+
+## (任意)ユーザー名・パスワードの省略
+
+GitHubのリポジトリをクローンした後、毎回ユーザー名とパスワードを入力するのは面倒です。以下の手順で省略できます。
+- クローンしたリポジトリのルートにある`.git`ディレクトリに移動
+- `config`ファイルを開き以下のように編集します。`https://github.com...`の`//`と`github.com`の間に`{あなたのGitHubアカウント名}:{あなたのPAT}@`を追加します。
+
+``` ini
+...
+[remote "origin"]
+        url = https://{あなたのGitHubアカウント名}:{あなたのPAT}@github.com/{あなたのGitHubアカウント名}/cloudnative-practice.git
+...
 ```
 
 # プラクティスの開始
