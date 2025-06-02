@@ -53,7 +53,7 @@ for issue in issues:
     data = {
         'title': issue['title'],
         'body': issue['body'],
-        'labels': labels[0]['name']
+        'labels': [labels[0]['name']]
     }
     response = requests.post(issue_url, headers=headers, json=data)
     # 結果確認

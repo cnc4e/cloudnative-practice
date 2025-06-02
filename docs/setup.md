@@ -209,8 +209,9 @@ git merge upstream/main
   ![review-3](./images/review-3.png)
 - レビュアーにしたいGitHubアカウント名**Find people**を入力し、``Add ``をクリック
   ![review-4](./images/review-4.png)
-- 追加したレビューア宛てにGitHubから招待メールが送信されます。レビュアーはそのメールを受け取り、承認することでリポジトリにアクセスできるようになります。
-  ![review-5](./images/review-5.png)  
+- 追加したレビューア宛てにGitHubから招待メールが送信されます。``View invitation``を選択
+  ![review-5](./images/review-5.png)
+- ``Accept invitation``することでリポジトリにアクセスできるようになります。
   ![review-6](./images/review-6.png)
 
 ## (任意)ユーザー名・パスワードの省略

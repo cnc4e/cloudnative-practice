@@ -1,7 +1,7 @@
 
 [Top](../README.md)  
 前: [CloudNativeの基礎](./cloudnative.md)  
-次: []()  
+次: [作成中]()  
 
 ---
 
@@ -15,6 +15,7 @@
 - [プラクティス](#プラクティス)
   - [issue作成](#issue作成)
   - [issue対応](#issue対応)
+  - [issue対応後](#issue対応後)
 
 # 構成管理がなぜ必要か
 
@@ -44,34 +45,42 @@ IaC（Infrastructure as Code）は、インフラの構成や設定をコード�
 
 ## issue作成
 
-``` sh
-cd scripts
-```
+自身のGitHubアカウントに作成した`cloudnative-practice`リポジトリにIssueを作成します。issueを作成するスクリプトを用意しているためそれを使います。
 
-環境変数に値を設定
+- まずはリポジトリのルートから以下コマンドで`scripts`ディレクトリに移動
 
-``` sh
-export GITHUB_TOKEN={あなたのGitHubのPAT}
-export GITHUB_REPO={あなたのGitHubアカウント名}/cloudnative-practice
-```
+  ``` sh
+  cd scripts
+  ```
 
-スクリプト実行
+- 環境変数に値を設定
 
-``` sh
-python configuration.py
-```
+  ``` sh
+  export GITHUB_TOKEN={あなたのGitHubのPAT}
+  export GITHUB_REPO={あなたのGitHubアカウント名}/cloudnative-practice
+  ```
+
+- スクリプト実行
+
+  ``` sh
+  python configuration.py
+  ```
 
 自身のGitHubアカウントの`cloudnative-practice`リポジトリを開き、`Issues`タブに`構成管理`のラベルがついたissueが作成されていることを確認してください。
 
 ## issue対応
 
-以下タイトルのissueを対応してください。issueを対応する流れは[こちら](./practice-flow.md)を参照してください。
+以下タイトルのissueを対応してください。issueを対応する流れは[こちら](./practice-flow.md)を参照してください。コーディングルールは[こちら](./coderule.md)を参照してください。もし詰まってしまった場合、[example](./example)ディレクトリにサンプルコードを用意していますので参考にしてください。
 
 - Terraformバックエンドを作成する
 - ネットワークを作成する
+
+## issue対応後
+
+IaCやGitはCloudNativeの基礎であり重要な要素です。今後のプラクティスでも頻繁に使用します。初めは慣れなくても、繰り返し使うことで自然と身についていきますので安心してください。次のプラクティスでは簡単なWEBサービスを作成しつつコンテナを学びます。
 
 ---
 
 [Top](../README.md)  
 前: [CloudNativeの基礎](./cloudnative.md)  
-次: []()  
+次: [作成中]()  

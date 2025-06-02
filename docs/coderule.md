@@ -38,6 +38,7 @@
 ## 6. バージョン管理
 - `terraform.lock.hcl` を必ずコミットし、プロバイダーのバージョンを固定する。
 - `state` ファイルはリモートバックエンド（S3等）で管理し、ローカルには置かない。
+  - stateのキー名はモジュール名と同じにする（例: `network.tfstate`）。
 - Terraform本体のバージョン（`terraform`ブロックの`required_version`）および各プロバイダーのバージョン（`required_providers`）を必ず明示的に指定する。これらは通常、`provider.tf`や`versions.tf`などのファイルに記述する。
 - `.gitignore` に `.terraform` や `*.tfstate` を追加し、不要なディレクトリ・ファイルをGitで管理しないようにする。
 
