@@ -4,7 +4,7 @@ settings:
   - name: container
     label:
       name: コンテナ
-      color: 1f77b4
+      color: C5DEF5
       description: コンテナの設定
     issue_yaml: container.yaml
   - name: configuration
