@@ -29,10 +29,14 @@
 # 前提
 
 - 以下practiceを実施済
-  - git
-  - terraform
-  - docker
-  - k8s
+  - [git-practice](https://github.com/cnc4e/git-practice)
+    - 2.基礎 まで完了
+  - [terraform-practice](https://github.com/cnc4e/terraform-practice)
+    - ステップ2　基本的なTerraformの書き方・知識 まで完了
+  - [docker-practice](https://github.com/cnc4e/docker-practice)
+    - コンテナイメージの基本 まで完了
+  - [k8s-practice](https://github.com/cnc4e/k8s-practice)
+    - 1.Beginner(初級) まで完了
 - AWSアカウントを持っている
 - AWSについての基礎的な知識（VPC、subnet等）がある
 - Linuxの基本的なコマンド(cd、ls等)が使える

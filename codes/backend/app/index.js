@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const PORT = process.env.PORT;
+const PORT = 3000;
 
 app.use(cors());
 
@@ -11,4 +11,4 @@ app.get('/api/message', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Backend listening on port ${PORT}`);
-});
+}); 

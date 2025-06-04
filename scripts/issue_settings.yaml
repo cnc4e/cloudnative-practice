@@ -1,0 +1,15 @@
+# issue_settings.yaml
+# 各スクリプトのパラメータをここで管理
+settings:
+  - name: container
+    label:
+      name: コンテナ
+      color: 1f77b4
+      description: コンテナの設定
+    issue_yaml: container.yaml
+  - name: configuration
+    label:
+      name: 構成管理
+      color: 1f77b4
+      description: インフラや設定の管理
+    issue_yaml: configuration.yaml

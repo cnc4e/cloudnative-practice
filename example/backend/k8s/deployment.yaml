@@ -16,7 +16,10 @@ spec:
     spec:
       containers:
       - name: backend
-        image: 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/backend:v1
+        image: 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/backend:v2
+        env:
+        - name: PORT
+          value: "3000"
         ports:
         - containerPort: 3000
         resources:

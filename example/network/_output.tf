@@ -25,3 +25,11 @@ output "public_route_table_id" {
 output "private_route_table_id" {
   value = aws_route_table.private.id
 }
+
+output "public_subnet_cidrs" {
+  value = [for s in aws_subnet.public : s.cidr_block]
+}
+
+output "private_subnet_cidrs" {
+  value = [for s in aws_subnet.private : s.cidr_block]
+}

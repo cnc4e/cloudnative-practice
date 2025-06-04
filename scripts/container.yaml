@@ -1,0 +1,158 @@
+issues:
+  - title: EKSクラスタを作成する
+    body: |
+      コンテナを動かすオーケストレータであるEKSクラスタを作成する**eks**モジュールを作成する。  
+      コードは`codes`ディレクトリ配下に`eks`ディレクトリを作成し、そこにコードを配置する。  
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
+      
+      # 欲しいもの
+      - EKSクラスタ
+        - オートモードを有効
+        - クラスタにはパブリックサブネットとプライベートサブネットを使用
+        - クラスタエンドポイントはパブリックおよびプライベートを有効
+          - パブリックのアクセスはCIDR制限をかける
+        - アクセスエントリでクラスタ作成したIAMユーザーにAmazonEKSClusterAdminPolicy権限を付与
+        - 組み込みノードプール(system および general-purpose)を有効
+      
+      # その他
+      EKSをデプロイした後、kubectlでアクセスできることも確認する。  
+      参考:[kubeconfig ファイルを作成して kubectl を EKS クラスターに接続する](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/create-kubeconfig.html)
+  - title: ECRを作成する
+    body: |
+      ECRのリポジトリを作成する**ecr**モジュールを作成する。  
+      コードは`codes`ディレクトリ配下に`ecr`ディレクトリを作成し、そこにコードを配置する。  
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
+      
+      # 欲しいもの
+      - ECR
+        - 以下のリポジトリを作成
+          - backend
+          - frontend
+        - リポジトリはプライベート
+  - title: サブネットにタグを追加する
+    body: |
+      サブネットにEKSからELBをデプロイするためのタグを追加するため**network**モジュールを改良する。
+      タグの内容は[VPC とサブネットの Amazon EKS ネットワーキング要件を表示する](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/network-reqs.html)を参照。
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
+
+      # 欲しいもの
+      - サブネット
+        - パブリックサブネットにはパブリック用のタグを追加
+        - プライベートサブネットにはプライベート用のタグを追加
+  - title: バックエンドのコンテナをデプロイする
+    body: |
+      バックエンドのコンテナをEKSにデプロイする**backend**モジュールを作成する。  
+      コードは`codes`ディレクトリ配下に`backend/k8s`ディレクトリを作成し、そこにコードを配置する。  
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
+      
+      # 前提
+      - ECRが作成されていること
+      
+      # まずして欲しいこと
+      - コンテナイメージのビルド&プッシュ
+        - `codes/backend/app`ディレクトリにあるDockerfileを使用して`backend`イメージをビルド
+          - ビルドしたイメージのタグは一意（v1等)にする
+        - ビルドしたイメージをECRのbackendリポジトリにプッシュ
+          - ECRへのプッシュ方法は[こちら](https://docs.aws.amazon.com/ja_jp/AmazonECR/latest/userguide/docker-push-ecr-image.html)を参考にする
+
+      # 欲しいもの
+      - backendのk8sリソース
+        - Deployment
+          - コンテナイメージはECRのbackendリポジトリから取得
+          - レプリカ数は1
+        - Service
+          - タイプはClusterIP
+          - ポートは3000
+          - ターゲットポートは3000
+      
+      # その他
+      動作確認はフロントエンドデプロイ後に行う。
+  - title: フロントエンドのコンテナをデプロイする
+    body: |
+      フロントエンドのコンテナをEKSにデプロイする**frontend**モジュールを作成する。  
+      コードは`codes`ディレクトリ配下に`frontend/k8s`ディレクトリを作成し、そこにコードを配置する。  
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
+      
+      # 前提
+      - バックエンドのデプロイが完了していること
+      - サブネットのタグが追加されていること
+      
+      # まずして欲しいこと
+      - コンテナイメージのビルド&プッシュ
+        - `codes/frontend/app`ディレクトリにあるDockerfileを使用して`frontend`イメージをビルド
+          - ビルドしたイメージのタグは一意（v1t等)にする
+        - ビルドしたイメージをECRのfrontendリポジトリにプッシュ
+          - ECRへのプッシュ方法は[こちら](https://docs.aws.amazon.com/ja_jp/AmazonECR/latest/userguide/docker-push-ecr-image.html)を参考にする
+
+      # 欲しいもの
+      - frontendのk8sリソース
+        - Deployment
+          - コンテナイメージはECRのfrontendリポジトリから取得
+          - レプリカ数は1
+        - Service
+          - ALBコントローラーを使用してインターネット公開のALBを作成
+          - タイプはLoadBalancer
+          - ポートは80
+          - ターゲットポートは80
+      
+      # その他
+      K8sリソース群をデプロイ後、ALBのDNS名でアクセスできることを確認する。
+  - title: バックエンドの公開ポートを環境変数で指定できるようにする
+    body: |
+      バックエンドの公開ポートを環境変数で指定できるようにする**backend**モジュールを改良する。
+      
+      # 前提
+      - バックエンドのデプロイが完了していること
+      
+      # まずして欲しいこと
+      - コンテナイメージのリビルド&プッシュ
+        - `codes/backend/app`ディレクトリにある`Dockerfile`の以下箇所を削除
+          ```
+          EXPOSE 3000
+          ```
+        - `codes/backend/app`ディレクトリにある`index.js`の以下箇所を修正
+          ```
+          < const PORT = 3000;
+          ---
+          > const PORT = process.env.PORT;
+          ```
+        - ビルドしたイメージをECRのbackendリポジトリにプッシュ
+          - イメージのタグは一意（v2等)にする
+          - ECRへのプッシュ方法は[こちら](https://docs.aws.amazon.com/ja_jp/AmazonECR/latest/userguide/docker-push-ecr-image.html)を参考にする
+
+      # 欲しいもの
+      - backendのk8sリソース
+        - Deployment
+          - コンテナイメージはECRのfrontendリポジトリから取得
+          - 環境変数`PORT`を追加
+            - 値は3000
+      
+      # その他
+      K8sリソース群をデプロイ後、PodがRunning状態になっていることを確認する。
+      また、Podをdescribeして、環境変数`PORT`が設定されていることを確認する。
+  - title: フロントエンドのメッセージを変更する
+    body: |
+      フロントエンドで表示するメッセージを修正するため**frontend**モジュールを改良する。
+      
+      # 前提
+      - フロントエンドのデプロイが完了していること
+      
+      # まずして欲しいこと
+      - コンテナイメージのリビルド&プッシュ
+        - `codes/frontend/app/src`ディレクトリにある`App.js`の以下箇所を修正
+          ```
+          < <h1>フロントエンドからのメッセージ</h1>
+          ---
+          > <h1>バックエンドから取得したメッセージ</h1>
+          ```
+        - ビルドしたイメージをECRのfrontendリポジトリにプッシュ
+          - イメージのタグは一意（v2等)にする
+          - ECRへのプッシュ方法は[こちら](https://docs.aws.amazon.com/ja_jp/AmazonECR/latest/userguide/docker-push-ecr-image.html)を参考にする
+
+      # 欲しいもの
+      - frontendのk8sリソース
+        - Deployment
+          - コンテナイメージはECRのfrontendリポジトリから取得
+      
+      # その他
+      ALBのDNS名でアクセスし、フロントエンドの画面に「バックエンドから取得したメッセージ」と表示されていることを確認する。

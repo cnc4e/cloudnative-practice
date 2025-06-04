@@ -11,7 +11,7 @@ resource "aws_eks_cluster" "this" {
 
   compute_config {
     enabled       = true
-    node_pools    = ["general-purpose","system"]
+    node_pools    = ["general-purpose", "system"]
     node_role_arn = aws_iam_role.node.arn
   }
 
@@ -57,6 +57,8 @@ resource "aws_eks_access_entry" "current_user" {
   cluster_name  = aws_eks_cluster.this.name
   principal_arn = data.aws_caller_identity.current.arn
   type          = "STANDARD"
+
+  depends_on = [aws_eks_cluster.this]
 }
 
 # Terraform実行ユーザーのEKSアクセス権限付与
@@ -68,4 +70,6 @@ resource "aws_eks_access_policy_association" "current_user_admin" {
   access_scope {
     type = "cluster"
   }
+
+  depends_on = [aws_eks_access_entry.current_user]
 }
