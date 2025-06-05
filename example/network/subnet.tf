@@ -15,10 +15,9 @@ resource "aws_subnet" "public" {
 resource "aws_subnet" "private" {
   for_each = local.private_subnets
 
-  vpc_id                  = aws_vpc.this.id
-  availability_zone       = "${local.region}${each.key}"
-  cidr_block              = each.value
-  map_public_ip_on_launch = true
+  vpc_id            = aws_vpc.this.id
+  availability_zone = "${local.region}${each.key}"
+  cidr_block        = each.value
 
   tags = {
     Name                              = "${local.name_prefix}-private-${each.key}",
