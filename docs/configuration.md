@@ -77,6 +77,10 @@ IaC（Infrastructure as Code）は、インフラの構成や設定をコード�
 - Terraformバックエンドを作成する
 - ネットワークを作成する
 
+作成する環境は以下のイメージ図です。
+
+![configuration](./images/configuration.drawio.svg
+
 ## issue対応後
 
 IaCやGitはCloudNativeの基礎であり重要な要素です。今後のプラクティスでも頻繁に使用します。初めは慣れなくても、繰り返し使うことで自然と身についていきますので安心してください。次のプラクティスでは簡単なWEBサービスを作成しつつコンテナを学びます。
