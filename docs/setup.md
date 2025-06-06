@@ -41,6 +41,8 @@ GitHubアカウントの個人アクセストークン(PAT)を持っていない
 権限は以下が最低限ついていればいいです。
 
 - Fine-grained tokens の場合
+  - Repository access
+    - `All repositories`
   - Repository permissions
     - `Issues`: Read & Write
     - `Contents`: Read & Write
