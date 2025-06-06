@@ -90,7 +90,7 @@ Kubernetesの運用は複雑で、クラスタのセットアップや管理に�
 
 ## issue対応
 
-> 注意: issue対応はK8sの基本的な使い方を理解していることが前提です。[k8s-practice](https://github.com/cnc4e/k8s-practice)を先に学習してください。
+> 注意: issue対応はDockerとK8sの基本的な使い方を理解していることが前提です。[docker-practice](https://github.com/cnc4e/docker-practice)、[k8s-practice](https://github.com/cnc4e/k8s-practice)を先に学習してください。
 
 以下タイトルのissueを対応してください。issueを対応する流れは[こちら](./practice-flow.md)を参照してください。コーディングルールは[こちら](./coderule.md)を参照してください。もし詰まってしまった場合、[example](./example)ディレクトリにサンプルコードを用意していますので参考にしてください。
 
