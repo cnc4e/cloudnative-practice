@@ -118,7 +118,7 @@ git push origin {ブランチ名}
   ```
 - 作業ブランチを削除します。
   ``` sh
-  git branch -d {issue番号}-{issueタイトル}
+  git branch -b {issue番号}-{issueタイトル}
   ```
 
 ---
