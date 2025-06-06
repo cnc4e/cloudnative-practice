@@ -119,7 +119,10 @@ python3を使用してください。
 docker --version
 ```
 
-インストールされていない場合、次を参考にインストールしてください。[Dockerのインストール](https://docs.docker.com/engine/install/)
+インストールされていない場合、次を参考にインストールしてください。
+
+- AmazonLinuxの場合: [AWS SAM CLI で Docker を使用するためのインストール方法](https://docs.aws.amazon.com/ja_jp/serverless-application-model/latest/developerguide/install-docker.html)
+- それ以外の場合: [Dockerのインストール](https://docs.docker.com/engine/install/)
 
 ### helm
 
