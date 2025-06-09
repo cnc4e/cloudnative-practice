@@ -9,27 +9,53 @@ name: Push to ECR
 on:
   workflow_dispatch:  # 手動トリガー
 
+# jobs:
+#   build-and-push:
+#     runs-on: arc-runner-set
+#     env:
+#       AWS_REGION: ap-northeast-2
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       - name: Download kaniko executor
+#         run: |
+#           curl -sSL -o /tmp/kaniko.tar.gz https://github.com/GoogleContainerTools/kaniko/releases/download/v1.22.0/executor-linux-amd64.tar.gz
+#           tar -xzf /tmp/kaniko.tar.gz -C /tmp
+#           chmod +x /tmp/executor
+
+#       - name: Build and push Docker image with kaniko
+#         env:
+#           AWS_REGION: ${{ env.AWS_REGION }}
+#           IMAGE: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/frontend:${{ github.sha }}
+#         run: |
+#           /tmp/executor \
+#             --context $GITHUB_WORKSPACE/codes/frontend/app \
+#             --dockerfile $GITHUB_WORKSPACE/codes/frontend/app/Dockerfile \
+#             --destination $IMAGE
+
 jobs:
-  build-and-push:
-    runs-on: arc-runner-set
-    env:
-      AWS_REGION: ap-northeast-2
+  deploy:
+    runs-on: self-hosted  # EKS上のセルフホストRunnerを指定
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download kaniko executor
-        run: |
-          curl -sSL -o /tmp/kaniko.tar.gz https://github.com/GoogleContainerTools/kaniko/releases/download/v1.22.0/executor-linux-amd64.tar.gz
-          tar -xzf /tmp/kaniko.tar.gz -C /tmp
-          chmod +x /tmp/executor
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ap-northeast-2
+          role-to-assume: arn:aws:iam::456247443832:role/cn-practice-actions-runner-role
+          role-session-name: github-actions
 
-      - name: Build and push Docker image with kaniko
-        env:
-          AWS_REGION: ${{ env.AWS_REGION }}
-          IMAGE: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/frontend:${{ github.sha }}
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build Docker image
         run: |
-          /tmp/executor \
-            --context $GITHUB_WORKSPACE/codes/frontend/app \
-            --dockerfile $GITHUB_WORKSPACE/codes/frontend/app/Dockerfile \
-            --destination $IMAGE
+          docker build -t ${{ steps.login-ecr.outputs.registry }}/frontend:${{ github.sha }} .
+
+      - name: Push Docker image to ECR
+        run: |
+          docker push ${{ steps.login-ecr.outputs.registry }}/frontend:${{ github.sha }}
