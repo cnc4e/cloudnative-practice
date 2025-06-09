@@ -50,10 +50,15 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-        env:
-          AWS_CONTAINER_CREDENTIALS_FULL_URI: ''
-          AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: ''
+        run: |
+          aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com
+
+      # - name: Login to Amazon ECR
+      #   id: login-ecr
+      #   uses: aws-actions/amazon-ecr-login@v1
+      #   env:
+      #     AWS_CONTAINER_CREDENTIALS_FULL_URI: ''
+      #     AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: ''
 
       - name: Build Docker image
         run: |
