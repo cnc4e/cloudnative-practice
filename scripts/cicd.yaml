@@ -1,0 +1,74 @@
+issues:
+  # - title: cert-managerをセットアップする
+  #   body: |
+  #     cert-manager をセットアップする**cert-manager**モジュールを作成する。  
+  #     コードは`codes`ディレクトリ配下に`cert-manager`ディレクトリを作成し、そこにコードを配置する。  
+  #     コードを作成し、リソースのデプロイが完了したらPRを出す。
+      
+  #     # cert-managerについて
+  #     cert-manager は K8s のためのオープンソースの証明書管理ツールです。  
+  #     K8s のリソースとして証明書を管理し、証明書の自動更新や発行を行うことができます。  
+  #     K8s にインストールするオペレーターなどのカスタムコントローラーはAPIサーバーと通信します。  
+  #     その際、通信の暗号化のためにTLS証明書が必要になります。  
+  #     cert-manager はそのTLS証明書を自動で管理してくれるツールです。  
+  #     多くのオペレーターは導入前提として cert-manager を必要とします。
+
+  #     # 欲しいもの
+  #     - cert-manager
+  #       - helm を使いインストール
+  #         - 以下オプションを values.yaml に定義してコードに残す
+  #           - crd: true
+  #           - prometheus: false
+  #       - インストール方法は[ここ](https://cert-manager.io/docs/installation/helm/)を参考にする
+
+  #     # その他
+  #     helmの使い方は次を参考にすること。
+  #     - [Helmの使い方](https://helm.sh/ja/docs/intro/using_helm/)
+  #     - [Helmの使い方を3分で理解する](https://qiita.com/MahoTakara/items/3c509235cc18bd407f07)
+  - title: GitHub Actions Runnerをセットアップする
+    body: |
+      CIを実行するためのGitHub Actions Runnerをセットアップする。  
+      コードは`codes`ディレクトリ配下に`actions`ディレクトリを作成し、そこにコードを配置する。
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
+
+      # 構成説明
+      GitHub Actions は GitHub の PullRequest などをトリガーにワークフローを実行する。  
+      ワークフローには複数のジョブを含めることができ、各ジョブはGitHub Actions Runner（ランナー）で実行される。  
+      ランナーはGitHubのサーバー上で実行されるホスト型ランナーと、ユーザーが管理するセルフホスト型ランナーの2種類がある。  
+      今回はセルフホスト型のランナーをK8sに作成する。  
+      ランナーを作る方法はいくつかあるが、ここでは [GitHub Actions Runner Controller](https://github.com/actions/actions-runner-controller)(ARC) を使用する。  
+      ARCはK8sにインストールするオペレーター（特定のアプリケーションやサービスの運用を自動化する仕組み）の一つ。  
+      ARCを使用することで、K8sのPodとしてGitHub Actions Runnerを実行できるようになる。
+
+      # 欲しいもの
+      - ARC
+        - helmを使いインストール
+          - インストール方法は[Actions Runner Controller のクイックスタート](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller/quickstart-for-actions-runner-controller)を参考にする
+        - `helm install`のコマンド全文を`actions`ディレクトリ配下の`README.md`に書いて保存すること
+      - RunnerScaleSet
+        - helmを使いインストール
+        - 自身の`cloudnative-practice`リポジトリを指定したランナーをデプロイする
+        - 認証方法は`PAT`または`GitHub App`を使用する
+          - `PAT`の方が設定は楽。ただしトークンは個人に紐づく
+          - `GitHub App`の方は個人に紐づかないため実PJ向き
+        - 認証情報を格納したSecretはマニフェストに**含めない**こと
+          - Gitに認証情報を含めると漏洩する可能性があるため
+        - `helm install`のコマンド全文を`actions`ディレクトリ配下の`README.md`に書いて保存すること
+
+      # その他
+      RunnerScaleSetデプロイ後、GitHubの自身の`cloudnative-practice`リポジトリで settings > Actuins > Runners を開きスケールセットがオンラインになっていることを確認する。
+  - title: フロンエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する
+    body: |
+      ほげ
+  - title: バックエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する
+    body: |
+      ほげ
+  - title: Argo CD をセットアップする
+    body: |
+      ほげ
+  - title: フロントエンドのデプロイをGitOpsで行う
+    body: |
+      ほげ
+  - title: バックエンドのデプロイをGitOpsで行う
+    body: |
+      ほげ

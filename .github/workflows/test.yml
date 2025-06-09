@@ -1,0 +1,11 @@
+name: Self-hosted Runner Test
+
+on:
+  workflow_dispatch:  # 手動トリガー
+
+jobs:
+  test-runner:
+    runs-on: arc-runner-set
+    steps:
+      - name: 確認用の echo 出力
+        run: echo "🎉 Self-hosted Runner でワークフローが実行されました！"
