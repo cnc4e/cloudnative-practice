@@ -23,6 +23,9 @@ jobs:
       #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       #     aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Check AWS Identity
+        run: aws sts get-caller-identity
+
       - name: Log in to Amazon ECR
         run: |
           aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.ap-northeast-2.amazonaws.com
