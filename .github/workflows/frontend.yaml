@@ -15,8 +15,6 @@ jobs:
     env:
       AWS_REGION: ap-northeast-2
     steps:
-      - name: Setup AWS CLI
-        uses: aws-actions/aws-cli-action@v4
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -27,16 +25,15 @@ jobs:
       #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       #     aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Check AWS Identity
-        run: |
-          echo "AWS_REGION=$AWS_REGION"
-          aws sts get-caller-identity
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Log in to Amazon ECR
+      - name: Build, tag, and push docker image to Amazon ECR
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: frontend
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.ap-northeast-2.amazonaws.com
-
-      - name: Build Docker image
-        run: |
-          IMAGE_TAG=$(date +"%Y%m%d%H%M")
-          docker build -t 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:${IMAGE_TAG} -f codes/frontend/app/Dockerfile codes/frontend/app
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
