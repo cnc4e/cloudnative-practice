@@ -18,9 +18,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: codes/frontend/app
-          push: true
-          tags: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/frontend:${{ github.sha }}
+      - name: Download kaniko executor
+        run: |
+          curl -sSL -o /tmp/kaniko.tar.gz https://github.com/GoogleContainerTools/kaniko/releases/download/v1.22.0/executor-linux-amd64.tar.gz
+          tar -xzf /tmp/kaniko.tar.gz -C /tmp
+          chmod +x /tmp/executor
+
+      - name: Build and push Docker image with kaniko
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          IMAGE: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/frontend:${{ github.sha }}
+        run: |
+          /tmp/executor \
+            --context $GITHUB_WORKSPACE/codes/frontend/app \
+            --dockerfile $GITHUB_WORKSPACE/codes/frontend/app/Dockerfile \
+            --destination $IMAGE
