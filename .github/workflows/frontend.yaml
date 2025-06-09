@@ -1,0 +1,33 @@
+name: Push to ECR
+
+# on:
+#   push:
+#     branches:
+#       - main
+#     paths:
+#       - 'codes/frontend/app/**'
+on:
+  workflow_dispatch:  # 手動トリガー
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v3
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query 'Account' --output text).dkr.ecr.ap-northeast-2.amazonaws.com
+
+      - name: Build Docker image
+        run: |
+          IMAGE_TAG=$(date +"%Y%m%d%H%M")
+          docker build -t 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:${IMAGE_TAG} -f codes/frontend/app/Dockerfile codes/frontend/app

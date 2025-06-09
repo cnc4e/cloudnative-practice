@@ -28,8 +28,8 @@ issues:
   - title: GitHub Actions Runnerをセットアップする
     body: |
       CIを実行するためのGitHub Actions Runnerをセットアップする。  
-      コードは`codes`ディレクトリ配下に`actions`ディレクトリを作成し、そこにコードを配置する。
-      コードを作成し、リソースのデプロイが完了したらPRを出す。
+      README.mdは`codes`ディレクトリ配下に`actions`ディレクトリを作成し、そこにREDME.mdを配置する。  
+      README.mdを作成し、リソースのデプロイが完了したらPRを出す。
 
       # 構成説明
       GitHub Actions は GitHub の PullRequest などをトリガーにワークフローを実行する。  
@@ -56,7 +56,76 @@ issues:
         - `helm install`のコマンド全文を`actions`ディレクトリ配下の`README.md`に書いて保存すること
 
       # その他
-      RunnerScaleSetデプロイ後、GitHubの自身の`cloudnative-practice`リポジトリで settings > Actuins > Runners を開きスケールセットがオンラインになっていることを確認する。
+      RunnerScaleSetデプロイ後、GitHubの自身の`cloudnative-practice`リポジトリで settings > Actuins > Runners を開きRunnerがオンラインになっていることを確認する。
+  - title: GitHub Actions の動作確認をする
+    body: |
+      セットアップしたセルフホストランナーでワークフローが実行できることを確認する。
+      動作確認用に手動トリガーで実行するワークフローを作成する。
+      GitHub Actionsのワークフローは`.github/workflows/`ディレクトリに定義ファイルを配置する。
+
+      # 前提
+
+      - GitHub Actions Runnerのセットアップが完了していること
+
+      # やること
+
+      - 以下の内容の`test.yml`をリポジトリのルート直下``.github/workflows/``ディレクトリに作成する。`runs-on`に settings > Actuins > Runners で確認できるRunner名を指定
+        ```yaml
+        name: Self-hosted Runner Test
+
+        on:
+          workflow_dispatch:  # 手動トリガー
+
+        jobs:
+          test-runner:
+            runs-on: arc-runner-set
+            steps:
+              - name: 確認用の echo 出力
+                run: echo "🎉 Self-hosted Runner でワークフローが実行されました！"
+        ```
+      - 変更をコミットし、GitHubにプッシュする。PRは不要（PRを出してもいい）。
+      - GitHubで Actions タブを開き、左のワークフロー一覧に`Self-hosted Runner Test`が表示されていることを確認
+      - `Self-hosted Runner Test`を選択し`Run workflow`ボタンをクリックしてワークフローを実行
+      - しばらくしてから画面をリロードするとワークフローが実行される。茶色は実行中、緑は成功、赤は失敗
+      - 緑になったらワークフローを選択。実行されたジョブが表示される。`test-runner`ジョブを選択し、ジョブの詳細を表示
+      - `確認用の echo 出力`のステップを選択し、`🎉 Self-hosted Runner でワークフローが実行されました！`と表示されていれば成功
+  - title: Runner に Pod Identity でIAMロールをアタッチする
+    body: |
+      Runner が ECR にアクセスできるように、Pod Identity を使って IAM ロールをアタッチする。
+      コードは`codes/actions`ディレクトリに配置する。
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
+
+      # 前提
+
+      - GitHub Actions Runnerのセットアップが完了していること
+
+      # EKSのPodのIAMロールについて
+
+      EKSのPodはデフォルトではノードのIAMロールを継承する。
+      ノードのIAMに必要以上に権限を与えると、ノード上で動くPodに不必要な権限が与えられてしまう。
+      そのため、Podごとに必要な権限を与えるIAMロールをアタッチすることが推奨される。
+
+      EKSにはPodにIAMロールをアタッチする方法が2つあるが、EKSオートモードでは [Pod Identity](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/pod-identities.html)がデフォルト使えるため本プラクティスでは Pod Identity を使用する。
+
+      # 欲しいもの
+
+      - Runner Podに付与するIAMロール
+        - 必要な権限は以下の通り
+          - `ecr:GetAuthorizationToken`
+          - `ecr:BatchCheckLayerAvailability`
+          - `ecr:GetDownloadUrlForLayer`
+          - `ecr:BatchGetImage`
+          - `ecr:PutImage`
+        - IAMロールは Pod Identity を使ってアタッチできるように信頼ポリシーを設定する
+          - `Service:pods.eks.amazonaws.com`
+          - `Action:["sts:AssumeRole","sts:TagSession"]`
+      - Pod Identity の設定 [aws_eks_pod_identity_association](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_pod_identity_association)
+        - IAMロールはPod用に作成したロールを指定
+        - Runner Pod の Namespace と ServiceAccount を指定。クイックスタート通りに作っている場合は以下の通り
+          - ns:arc-runners
+          - sa:arc-runner-set-gha-rs-no-permission
+        - EKSクラスタ名はできればeksモジュールからoutputで取得すること
+
   - title: フロンエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する
     body: |
       ほげ
