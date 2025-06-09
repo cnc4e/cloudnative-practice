@@ -36,7 +36,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted  # EKS上のセルフホストRunnerを指定
+    runs-on: arc-runner-set  # EKS上のセルフホストRunnerを指定
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
