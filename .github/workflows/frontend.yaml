@@ -11,8 +11,8 @@ jobs:
   deploy:
     runs-on: arc-runner-set  # EKS上のセルフホストRunnerを指定
     steps:
-      # - name: Checkout code
-      #   uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Login to ECR
         uses: docker/login-action@v3
