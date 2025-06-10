@@ -7,69 +7,17 @@ on:
 #     paths:
 #       - 'codes/frontend/app/**'
 
-# jobs:
-#   build-and-push:
-#     runs-on: arc-runner-set
-#     env:
-#       AWS_REGION: ap-northeast-2
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v3
-
-#       - name: Download kaniko executor
-#         run: |
-#           curl -sSL -o /tmp/kaniko.tar.gz https://github.com/GoogleContainerTools/kaniko/releases/download/v1.22.0/executor-linux-amd64.tar.gz
-#           tar -xzf /tmp/kaniko.tar.gz -C /tmp
-#           chmod +x /tmp/executor
-
-#       - name: Build and push Docker image with kaniko
-#         env:
-#           AWS_REGION: ${{ env.AWS_REGION }}
-#           IMAGE: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/frontend:${{ github.sha }}
-#         run: |
-#           /tmp/executor \
-#             --context $GITHUB_WORKSPACE/codes/frontend/app \
-#             --dockerfile $GITHUB_WORKSPACE/codes/frontend/app/Dockerfile \
-#             --destination $IMAGE
-
 jobs:
   deploy:
     runs-on: arc-runner-set  # EKS上のセルフホストRunnerを指定
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # - name: Configure AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@v2
-      #   with:
-      #     aws-region: ap-northeast-2
-      #     role-to-assume: arn:aws:iam::456247443832:role/cn-practice-actions-runner-role
-      #     role-session-name: github-actions
-
-      # - name: Login to Amazon ECR
-      #   id: login-ecr
-      #   run: |
-      #     aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com
-
-      # - name: Login to Amazon ECR
-      #   id: login-ecr
-      #   uses: aws-actions/amazon-ecr-login@v1
-      #   env:
-      #     AWS_CONTAINER_CREDENTIALS_FULL_URI: ''
-      #     AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: ''
+      # - name: Checkout code
+      #   uses: actions/checkout@v3
 
       - name: Login to ECR
         uses: docker/login-action@v3
         with:
           registry: 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com
-
-      # - name: Build Docker image
-      #   run: |
-      #     docker build -t ${{ steps.login-ecr.outputs.registry }}/frontend:${{ github.sha }} .
-
-      # - name: Push Docker image to ECR
-      #   run: |
-      #     docker push ${{ steps.login-ecr.outputs.registry }}/frontend:${{ github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -81,6 +29,9 @@ jobs:
             "annotations=karpenter.sh/do-not-disrupt=true"
             "tolerations=key=node-role,value=static,effect=NoSchedule"
 
+      - name: Set image tag (date)
+        run: echo "IMAGE_TAG=$(date +'%Y%m%d%H%M')" >> $GITHUB_ENV
+
       - name: Build and push
         uses: docker/build-push-action@v6
         env:
@@ -89,7 +40,4 @@ jobs:
           context: ./codes/frontend/app
           push: true
           provenance: false
-          tags: 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:test
-
-# https://github.com/aws-actions/amazon-ecr-login/pull/740
-# https://github.com/aws-actions/amazon-ecr-login/issues/624
+          tags: 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:${{ env.IMAGE_TAG }}
