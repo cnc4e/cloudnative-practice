@@ -28,8 +28,8 @@ issues:
   - title: GitHub Actions Runnerをセットアップする
     body: |
       CIを実行するためのGitHub Actions Runnerをセットアップする。  
-      README.mdは`codes`ディレクトリ配下に`actions`ディレクトリを作成し、そこにREDME.mdを配置する。  
-      README.mdを作成し、リソースのデプロイが完了したらPRを出す。
+      コードは`codes`ディレクトリ配下に`actions/k8s`ディレクトリを作成し、そこにコードを配置する。  
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
 
       # 構成説明
       GitHub Actions は GitHub の PullRequest などをトリガーにワークフローを実行する。  
@@ -44,19 +44,65 @@ issues:
       - ARC
         - helmを使いインストール
           - インストール方法は[Actions Runner Controller のクイックスタート](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller/quickstart-for-actions-runner-controller)を参考にする
-        - `helm install`のコマンド全文を`actions`ディレクトリ配下の`README.md`に書いて保存すること
-      - RunnerScaleSet
-        - helmを使いインストール
-        - 自身の`cloudnative-practice`リポジトリを指定したランナーをデプロイする
+        - `helm install`のコマンド全文を`actions/k8s`ディレクトリ配下の`README.md`に書いて保存すること
+      - GitHub認証情報を格納した K8s Secret
+        - [参考](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller/authenticating-to-the-github-api#deploying-using-personal-access-token-classic-authentication)
+        - 名前は`pre-defined-secret`など任意
         - 認証方法は`PAT`または`GitHub App`を使用する
           - `PAT`の方が設定は楽。ただしトークンは個人に紐づく
           - `GitHub App`の方は個人に紐づかないため実PJ向き
-        - 認証情報を格納したSecretはマニフェストに**含めない**こと
+        - 認証情報を格納したSecretはマニフェストにせずGitに**含めない**こと
           - Gitに認証情報を含めると漏洩する可能性があるため
-        - `helm install`のコマンド全文を`actions`ディレクトリ配下の`README.md`に書いて保存すること
+      - RunnerScaleSet
+        - helmを使いインストール
+          - インストール方法は[Actions Runner Controller のクイックスタート](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller/quickstart-for-actions-runner-controller#configuring-a-runner-scale-set)を参考にする
+        - `helm install`のコマンド全文を`actions/k8s`ディレクトリ配下の`README.md`に書いて保存すること
+        - valueファイルを作成し`helm install`コマンドの引数に指定する
+          - ファイル名は`arc-runner-set-value.yaml`など任意
+          - `githubConfigUrl`に自身の`cloudnative-practice`リポジトリを指定
+          - `githubConfigSecret`にGitHubの認証情報を格納したSecretの名前を指定
+          - `template.spec.serviceAccountName`に`arc-runner`を指定
+          - 以下、valueファイルのサンプル
+            ``` yaml
+            githubConfigUrl: https://github.com/ORG/REPO
+            githubConfigSecret: pre-defined-secret
+            template:
+              spec:
+                serviceAccountName: arc-runner
+            ```
+        - `helm install`のコマンド全文を`actions/k8s`ディレクトリ配下の`README.md`に書いて保存すること
 
-      # その他
+      # 確認
       RunnerScaleSetデプロイ後、GitHubの自身の`cloudnative-practice`リポジトリで settings > Actuins > Runners を開きRunnerがオンラインになっていることを確認する。
+
+      # 参考
+      helmの使い方は次を参考にすること。
+      - [Helmの使い方](https://helm.sh/ja/docs/intro/using_helm/)
+      - [Helmの使い方を3分で理解する](https://qiita.com/MahoTakara/items/3c509235cc18bd407f07)
+  - title: Runner用のServiceAccount、Role、RoleBindingsを作成する
+    body: |
+      Runner Pod が K8s 内部のリソースを操作出来るように関連リソースを作成する。  
+      コードは`codes/actions/k8s`ディレクトリに配置する。  
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
+
+      # 前提
+      - GitHub Actions Runnerのセットアップが完了していること
+
+      # 欲しいもの
+      - Runner用のServiceAccount
+        - 名前は`arc-runner`
+        - Namespaceは`arc-runners`
+      - Runner用のRole
+        - 名前は`arc-runner`
+        - Namespaceは`arc-runners`
+        - 以下の権限を持つ
+          - `apps` APIグループの`deployments`リソースに対して`create`, `get`, `delete`の権限
+          - `""` APIグループの`pods`リソースに対して`get`, `list`の権限
+          - `""` APIグループの`pods/exec`リソースに対して`create`の権限
+      - Runner用のRoleBinding
+        - 名前は`arc-runner`
+        - Namespaceは`arc-runners`
+        - `arc-runner` ServiceAccount に対して `arc-runner` Role をバインドする
   - title: GitHub Actions の動作確認をする
     body: |
       セットアップしたセルフホストランナーでワークフローが実行できることを確認する。
@@ -64,8 +110,7 @@ issues:
       GitHub Actionsのワークフローは`.github/workflows/`ディレクトリに定義ファイルを配置する。
 
       # 前提
-
-      - GitHub Actions Runnerのセットアップが完了していること
+      - Runner用のServiceAccount、Role、RoleBindingsを作成する
 
       # やること
 
@@ -92,7 +137,7 @@ issues:
   - title: Runner に Pod Identity でIAMロールをアタッチする
     body: |
       Runner が ECR にアクセスできるように、Pod Identity を使って IAM ロールをアタッチする。
-      コードは`codes/actions`ディレクトリに配置する。
+      コードは`codes/actions/terraform`ディレクトリに配置する。
       コードを作成し、リソースのデプロイが完了したらPRを出す。
 
       # 前提
@@ -124,14 +169,38 @@ issues:
           - `Action:["sts:AssumeRole","sts:TagSession"]`
       - Pod Identity の設定 [aws_eks_pod_identity_association](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_pod_identity_association)
         - Runner Pod用に作成したロールを Pod Identity にアタッチする
-        - Runner Pod の Namespace と ServiceAccount を指定。クイックスタート通りに作っている場合は以下の通り
+        - Runner Pod の Namespace と ServiceAccount は以下を指定
           - ns:arc-runners
-          - sa:arc-runner-set-gha-rs-no-permission
+          - sa:arc-runner
         - EKSクラスタ名はできればeksモジュールからoutputで取得すること
 
       # 参考
       [IAM ロールを Kubernetes サービスアカウントに割り当てる](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/pod-id-association.html)
+  - title: ECRにログインするGitHub Actionsのワークフローを作成する
+    body: |
+      GitHub Actions のワークフローで ECR にアクセスできることを確認する。
+      コードは`.github/workflows/`ディレクトリに配置する。
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
 
+      # 前提
+      - GitHub Actions の動作確認をする
+      - Runner用のServiceAccount、Role、RoleBindingsを作成する
+      - Runner に Pod Identity でIAMロールをアタッチする
+
+      # 欲しいもの
+      - ECRへのログインステップを含んだワークフロー
+        - 新規にファイルを作ってもいいし、test.ymlを改良しても良い
+        - `main`ブランチにプッシュされた時にワークフローを実行する
+        - Runnerはセルフホストのランナー名を指定
+        - ECRのログインには`docker/login-action@v3`を使用
+        - `registry`にはECRのレジストリURLを指定
+          - 例: `456247443832.dkr.ecr.ap-northeast-2.amazonaws.com`
+
+      # 確認
+      マージ後、ワークフローが実行され、ECRへのログインが成功することを確認する。
+
+      # 参考
+      マージ前に動作確認がしたければワークフローの実行条件をmainブランチから作業ブランチに変更すればいい。
   - title: フロンエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する
     body: |
       ほげ

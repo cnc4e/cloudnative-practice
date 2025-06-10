@@ -41,11 +41,9 @@ kubectl create secret generic pre-defined-secret \
 helm install arc-runner-set \
     --namespace arc-runners \
     --create-namespace \
-    --set githubConfigUrl=https://github.com/cnc4e/cloudnative-practice \
-    --set githubConfigSecret=pre-defined-secret \
+    -f arc-runner-set-value.yaml \
     oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
 ```
-
 
 # 参考にしたもの
 

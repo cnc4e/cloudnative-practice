@@ -1,0 +1,5 @@
+githubConfigUrl: https://github.com/cnc4e/cloudnative-practice
+githubConfigSecret: pre-defined-secret
+template:
+  spec:
+    serviceAccountName: arc-runner
