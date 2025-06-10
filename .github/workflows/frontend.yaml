@@ -76,7 +76,7 @@ jobs:
         with:
           driver: kubernetes
           driver-opts: |
-            namespace=docker-buildx
+            namespace=arc-runners
             "nodeselector=kubernetes.io/arch=amd64"
             "annotations=karpenter.sh/do-not-disrupt=true"
             "tolerations=key=node-role,value=static,effect=NoSchedule"
