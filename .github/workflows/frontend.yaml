@@ -1,13 +1,11 @@
 name: Push to ECR
 
-# on:
-#   push:
-#     branches:
-#       - main
+on:
+  push:
+    branches:
+      - main
 #     paths:
 #       - 'codes/frontend/app/**'
-on:
-  workflow_dispatch:  # 手動トリガー
 
 # jobs:
 #   build-and-push:
@@ -65,10 +63,33 @@ jobs:
         with:
           registry: 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com
 
-      - name: Build Docker image
-        run: |
-          docker build -t ${{ steps.login-ecr.outputs.registry }}/frontend:${{ github.sha }} .
+      # - name: Build Docker image
+      #   run: |
+      #     docker build -t ${{ steps.login-ecr.outputs.registry }}/frontend:${{ github.sha }} .
 
-      - name: Push Docker image to ECR
-        run: |
-          docker push ${{ steps.login-ecr.outputs.registry }}/frontend:${{ github.sha }}
+      # - name: Push Docker image to ECR
+      #   run: |
+      #     docker push ${{ steps.login-ecr.outputs.registry }}/frontend:${{ github.sha }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: kubernetes
+          driver-opts: |
+            namespace=docker-buildx
+            "nodeselector=kubernetes.io/arch=amd64"
+            "annotations=karpenter.sh/do-not-disrupt=true"
+            "tolerations=key=node-role,value=static,effect=NoSchedule"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+        with:
+          context: ./codes/frontend/app
+          push: true
+          provenance: false
+          tags: 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:test
+
+# https://github.com/aws-actions/amazon-ecr-login/pull/740
+# https://github.com/aws-actions/amazon-ecr-login/issues/624
