@@ -30,7 +30,7 @@ jobs:
             "tolerations=key=node-role,value=static,effect=NoSchedule"
 
       - name: Set image tag (date)
-        run: echo "IMAGE_TAG=$(date +'%Y%m%d%H%M')" >> $GITHUB_ENV
+        run: echo "IMAGE_TAG=$(TZ='Asia/Tokyo' date +'%Y%m%d%H%M')" >> $GITHUB_ENV
 
       - name: Build and push
         uses: docker/build-push-action@v6

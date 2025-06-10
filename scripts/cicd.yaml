@@ -116,15 +116,21 @@ issues:
           - `ecr:GetDownloadUrlForLayer`
           - `ecr:BatchGetImage`
           - `ecr:PutImage`
+          - `ecr:InitiateLayerUpload`
+          - `ecr:UploadLayerPart`
+          - `ecr:CompleteLayerUpload`
         - IAMロールは Pod Identity を使ってアタッチできるように信頼ポリシーを設定する
           - `Service:pods.eks.amazonaws.com`
           - `Action:["sts:AssumeRole","sts:TagSession"]`
       - Pod Identity の設定 [aws_eks_pod_identity_association](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_pod_identity_association)
-        - IAMロールはPod用に作成したロールを指定
+        - Runner Pod用に作成したロールを Pod Identity にアタッチする
         - Runner Pod の Namespace と ServiceAccount を指定。クイックスタート通りに作っている場合は以下の通り
           - ns:arc-runners
           - sa:arc-runner-set-gha-rs-no-permission
         - EKSクラスタ名はできればeksモジュールからoutputで取得すること
+
+      # 参考
+      [IAM ロールを Kubernetes サービスアカウントに割り当てる](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/pod-id-association.html)
 
   - title: フロンエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する
     body: |
