@@ -31,10 +31,11 @@ jobs:
 
       - name: Build and push
         uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
         with:
           context: ./codes/frontend/app
           push: true
-          provenance: false
           tags: 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:${{ env.IMAGE_TAG }}
 
 # jobs:

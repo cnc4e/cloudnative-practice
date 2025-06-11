@@ -25,7 +25,6 @@ jobs:
           driver: kubernetes
           driver-opts: |
             namespace=arc-runners
-            rootless=true
             "nodeselector=kubernetes.io/arch=amd64"
             "annotations=karpenter.sh/do-not-disrupt=true"
             "tolerations=key=node-role,value=static,effect=NoSchedule"
