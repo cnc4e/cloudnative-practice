@@ -240,6 +240,7 @@ issues:
               ```
           - Buildxを使ったイメージビルド
             - アクションは[docker/build-push-action](https://github.com/docker/build-push-action)を使用
+            - `env`に`DOCKER_BUILD_SUMMARY: false`を指定
             - パラメーターは最低限以下を指定
               - context: ./codes/frontend/app
               - push: true

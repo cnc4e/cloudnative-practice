@@ -36,6 +36,7 @@ jobs:
         with:
           context: ./codes/frontend/app
           push: true
+          provenance: false
           tags: 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:${{ env.IMAGE_TAG }}
 
 # jobs:
