@@ -1,11 +1,11 @@
-name: Push to ECR
+name: Frontend Container Build and Push
 
 on:
   push:
     branches:
       - main
-#     paths:
-#       - 'codes/frontend/app/**'
+    paths:
+      - 'codes/frontend/app/**'
 
 jobs:
   deploy:
@@ -34,6 +34,7 @@ jobs:
         with:
           context: ./codes/frontend/app
           push: true
+          provenance: false
           tags: 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:${{ env.IMAGE_TAG }}
 
 # jobs:
