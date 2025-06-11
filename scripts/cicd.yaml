@@ -332,6 +332,7 @@ issues:
       - フロントエンドのapplicationリソース
         - [directory](https://argo-cd.readthedocs.io/en/stable/user-guide/directory/#directory)タイプのアプリケーション
         - 名前は`frontend`など任意
+        - Namespaceは`argocd`
         - targetRevisionは`main`ブランチを指定
         - pathはフロントエンドのK8sマニフェストが配置されている`codes/frontend.k8s`ディレクトリを指定
         - syncPolicyは`automated`を指定
@@ -356,6 +357,7 @@ issues:
       - バックエンドのapplicationリソース
         - [directory](https://argo-cd.readthedocs.io/en/stable/user-guide/directory/#directory)タイプのアプリケーション
         - 名前は`backend`など任意
+        - Namespaceは`argocd`
         - targetRevisionは`main`ブランチを指定
         - pathはバックエンドのK8sマニフェストが配置されている`codes/backend.k8s`ディレクトリを指定
         - syncPolicyは`automated`を指定
@@ -363,3 +365,7 @@ issues:
       # 確認
       - Argo CD の Web UI でアプリケーションが追加されていることを確認する
       - また、追加したアプリケーションの`SYNC STATUS`が`Synced`になっていることを確認する
+  - title: Argo CD ImageUpdaterをインストール
+    body: |
+      ECRにプッシュしたイメージをArgo CDで自動的に更新するためのImageUpdaterをインストールする。
+      コードは`codes/actions/k8s`ディレクトリに配置する。

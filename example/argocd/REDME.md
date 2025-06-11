@@ -24,3 +24,8 @@ echo RDl5OFdmcmM0RkZhYkxaYw== | base64 -d
 kubectl port-forward svc/argocd-server -n argocd 8080:443
 ```
 
+# ImageUpdater
+
+```
+helm install -n argocd argocd-image-updater argo/argocd-image-updater
+```

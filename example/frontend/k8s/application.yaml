@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: backend
+  name: frontend
   namespace: argocd
 spec:
   destination:
@@ -9,7 +9,7 @@ spec:
     server: https://kubernetes.default.svc
   project: default
   source:
-    path: ./example/backend/k8s
+    path: ./example/frontend/k8s
     repoURL: https://github.com/moriryota62/cloudnative-practice
     targetRevision: main
   syncPolicy:
