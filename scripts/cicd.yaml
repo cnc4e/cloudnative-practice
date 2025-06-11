@@ -191,19 +191,56 @@ issues:
       - ECRへのログインステップを含んだワークフロー
         - 新規にファイルを作ってもいいし、test.ymlを改良しても良い
         - `main`ブランチにプッシュされた時にワークフローを実行する
+          - マージ前に動作確認したければmainブランチから作業ブランチに変更するといい
         - Runnerはセルフホストのランナー名を指定
-        - ECRのログインには`docker/login-action@v3`を使用
+        - ECRのログインには[docker/login-action@v3](https://github.com/docker/login-action)のアクションを使用
         - `registry`にはECRのレジストリURLを指定
           - 例: `456247443832.dkr.ecr.ap-northeast-2.amazonaws.com`
+        - Runner にIAMロールをアタッチしているためユーザー名とパスワードは指定しない
 
       # 確認
       マージ後、ワークフローが実行され、ECRへのログインが成功することを確認する。
-
-      # 参考
-      マージ前に動作確認がしたければワークフローの実行条件をmainブランチから作業ブランチに変更すればいい。
   - title: フロンエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する
     body: |
-      ほげ
+      GitHub Actions のワークフローでフロントエンドのイメージをビルドして ECR にプッシュする。
+      コードは`.github/workflows/`ディレクトリに配置する。
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
+
+      # 前提
+      - ECRにログインするGitHub Actionsのワークフローを作成する
+
+      # K8s の Pod で`docker build`する方法
+      Podはコンテナです。コンテナの中でDockerを実行するには管理者権限が必要です。
+      そのため、K8sのPodでDockerを実行するには特別な設定が必要でした。
+      しかし、この特別な設定はセキュリティ上のリスクがあるため、K8sでは推奨されていません。
+      そこで、K8sでは`docker buildx`を使用してコンテナイメージをビルドすることが推奨されています。
+      `docker buildx`はK8sのPodでDockerイメージをビルドするためのツールです。
+      `docker buildx`を使用することで、K8sのPodでDockerイメージをビルドすることができます。
+
+      # 欲しいもの
+      - フロントエンドのイメージをビルドして ECR にプッシュするワークフロー
+        - ファイル名は`frontend.yml`など任意
+        - `main`ブランチにプッシュされた時にワークフローを実行する
+          - マージ前に動作確認したければmainブランチから作業ブランチに変更するといい
+        - Runnerはセルフホストのランナー名を指定
+        - 以下のステップ
+          - コードのチェックアウト
+          - ECRへのログイン
+          - Docker Buildxのセットアップ
+            - アクションは[docker/setup-buildx-action](https://github.com/docker/setup-buildx-action)を使用
+            - `driver`は`kubernetes`を指定
+            - `driver-opts`に以下を指定
+              - `namespace=arc-runners`
+              - `rootless=true`
+              - `nodeselector=kubernetes.io/arch=amd64`
+              - `annotations=karpenter.sh/do-not-disrupt=true`
+              - `tolerations=key=node-role,value=static,effect=NoSchedule`
+          - Buildxを使ったイメージビルド
+            - アクションは[docker/build-push-action](https://github.com/docker/build-push-action)を使用
+        - フロントエンドのソースコードは`codes/frontend`ディレクトリに配置されていることを前提とする
+        - Dockerfileは`codes/frontend/Dockerfile`に配置されていることを前提とする
+        - ECRのログインには[docker/login-action@v3](
+
   - title: バックエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する
     body: |
       ほげ
