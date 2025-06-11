@@ -195,7 +195,7 @@ issues:
         - Runnerはセルフホストのランナー名を指定
         - ECRのログインには[docker/login-action@v3](https://github.com/docker/login-action)のアクションを使用
         - `registry`にはECRのレジストリURLを指定
-          - 例: `456247443832.dkr.ecr.ap-northeast-2.amazonaws.com`
+          - 例: `アカウントID.dkr.ecr.リージョン.amazonaws.com`
         - Runner にIAMロールをアタッチしているためユーザー名とパスワードは指定しない
 
       # 確認
@@ -244,6 +244,7 @@ issues:
             - パラメーターは最低限以下を指定
               - context: ./codes/frontend/app
               - push: true
+              - provenance: false
               - tags: 自身のECRのレジストリURLとイメージ名を指定
                 - タグは`イメージタグの設定`ステップで設定した`IMAGE_TAG`環境変数を使用
       - フロントエンドの変更
@@ -270,13 +271,95 @@ issues:
 
       # 確認
       マージ後、ワークフローが実行され、ECRにフロントエンドのイメージがプッシュされることを確認する。
+  - title: Argo CD をインストールする
+    body: |
+      # 欲しいもの
+      - Argo CD
+        - helmを使いインストール
+          - チャートは[argo-helm](https://github.com/argoproj/argo-helm)を使用する
+        - `helm install`のコマンド全文を`actions/k8s`ディレクトリ配下の`README.md`に書いて保存すること
 
-  - title: Argo CD をセットアップする
+      # 確認
+      - Argo CDのWeb UIにアクセスしログインできることを確認する。
+        - `admin`ユーザーの初期パスワードはSecretリソース`argocd-initial-admin-secret`に記載されている
+          - データはbase64エンコードされているためデコードすること
+            ``` sh
+            echo <base64エンコードされたパスワード> | base64 --decode
+            ```
+        - Serviceリソース`argocd-server`をローカル端末に以下のようなコマンドでポートフォワードしてアクセスする
+          ``` sh
+          kubectl port-forward svc/argocd-server -n argocd 8080:443
+          ```
+          - ブラウザで`https://localhost:8080`にアクセスする
+            - セキュリティ警告は無視する
+  - title: Arog CD のリポジトリ設定をする
     body: |
-      ほげ
-  - title: フロントエンドのデプロイをGitOpsで行う
+      Argo CD で自身の`cloudnative-practice`リポジトリにアクセスするための設定を行う。
+
+      # 前提
+      - Argo CD をインストールする
+      
+      # やること
+      - Argo CD の Web UI にログインする
+        - ログイン方法は`Argo CD をインストールする`を参照
+      - Settings > Repositories を開く
+      - `Connect Repo`をクリック
+      - 以下のように入力して`CONNECT`
+        - Choose your connection method: VIA http/https
+        - CONNECT REPO USING SSH
+          - Name: 任意(自身のGitHubアカウント名/cloudnative-practiceなど)
+          - Project: default
+          - Repository URL: 自身の`cloudnative-practice`リポジトリのURL（例：https://github.com/アカウント名/cloudnative-practice）
+          - Username: 任意(自身のGitHubアカウント名など)
+          - Password: GitHubのPersonal Access Token(PAT)を入力
+
+      # 確認
+      - Settings > Repositories 画面で追加したリポジトリが表示され`CONNECTION STATUS`が`Successful`になっていることを確認する。
+  - title: Argo CD にフロントエンドのアプリケーションを追加する
     body: |
-      ほげ
-  - title: バックエンドのデプロイをGitOpsで行う
+      フロントエンドを Argo CD で管理するためのアプリケーションを追加する。
+      コードは`codes/frontend/k8s`ディレクトリに配置する。
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
+
+      # 前提
+      - Argo CD のリポジトリ設定をする
+      
+      # Argo CD の設定
+      Argo CD の設定もK8sマニフェストで管理できます。
+      とくに、アプリケーションの定義はK8sの`Application`リソースで行います。
+
+      # 欲しいもの
+      - フロントエンドのapplicationリソース
+        - [directory](https://argo-cd.readthedocs.io/en/stable/user-guide/directory/#directory)タイプのアプリケーション
+        - 名前は`frontend`など任意
+        - targetRevisionは`main`ブランチを指定
+        - pathはフロントエンドのK8sマニフェストが配置されている`codes/frontend.k8s`ディレクトリを指定
+        - syncPolicyは`automated`を指定
+
+      # 確認
+      - Argo CD の Web UI でアプリケーションが追加されていることを確認する
+      - また、追加したアプリケーションの`SYNC STATUS`が`Synced`になっていることを確認する
+  - title: Argo CD にバックエンドのアプリケーションを追加する
     body: |
-      ほげ
+      バックエンドを Argo CD で管理するためのアプリケーションを追加する。
+      コードは`codes/frontend/k8s`ディレクトリに配置する。
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
+
+      # 前提
+      - Argo CD のリポジトリ設定をする
+      
+      # Argo CD の設定
+      Argo CD の設定もK8sマニフェストで管理できます。
+      とくに、アプリケーションの定義はK8sの`Application`リソースで行います。
+
+      # 欲しいもの
+      - バックエンドのapplicationリソース
+        - [directory](https://argo-cd.readthedocs.io/en/stable/user-guide/directory/#directory)タイプのアプリケーション
+        - 名前は`backend`など任意
+        - targetRevisionは`main`ブランチを指定
+        - pathはバックエンドのK8sマニフェストが配置されている`codes/backend.k8s`ディレクトリを指定
+        - syncPolicyは`automated`を指定
+
+      # 確認
+      - Argo CD の Web UI でアプリケーションが追加されていることを確認する
+      - また、追加したアプリケーションの`SYNC STATUS`が`Synced`になっていることを確認する
