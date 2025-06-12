@@ -273,14 +273,20 @@ issues:
       マージ後、ワークフローが実行され、ECRにフロントエンドのイメージがプッシュされることを確認する。
   - title: Argo CD をインストールする
     body: |
+      K8s 専用の継続的デリバリー(CD)ツールである [Argo CD](https://argo-cd.readthedocs.io/en/stable/) をインストールする。  
+      コードは`codes`ディレクトリ配下に`argocd/k8s`ディレクトリを作成し、そこにコードを配置する。  
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
+
       # 欲しいもの
       - Argo CD
         - helmを使いインストール
           - チャートは[argo-helm](https://github.com/argoproj/argo-helm)を使用する
+          - Namespaceは`argocd`を指定
+          - オプションは特に不要
         - `helm install`のコマンド全文を`actions/k8s`ディレクトリ配下の`README.md`に書いて保存すること
 
       # 確認
-      - Argo CDのWeb UIにアクセスしログインできることを確認する。
+      - Argo CD の Web UI にアクセスしログインできることを確認する。
         - `admin`ユーザーの初期パスワードはSecretリソース`argocd-initial-admin-secret`に記載されている
           - データはbase64エンコードされているためデコードすること
             ``` sh
@@ -355,17 +361,26 @@ issues:
 
       # 欲しいもの
       - バックエンドのapplicationリソース
-        - [directory](https://argo-cd.readthedocs.io/en/stable/user-guide/directory/#directory)タイプのアプリケーション
+        - [ここ](https://argo-cd.readthedocs.io/en/stable/user-guide/directory/#directory)を参考にする
         - 名前は`backend`など任意
         - Namespaceは`argocd`
-        - targetRevisionは`main`ブランチを指定
+        - targetRevisionは`main`を指定
         - pathはバックエンドのK8sマニフェストが配置されている`codes/backend.k8s`ディレクトリを指定
-        - syncPolicyは`automated`を指定
+        - syncPolicyは`automated`を指定（[参考]](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/)）
+          - automatedのオプションは特にしていしない(`{}`)
 
       # 確認
       - Argo CD の Web UI でアプリケーションが追加されていることを確認する
       - また、追加したアプリケーションの`SYNC STATUS`が`Synced`になっていることを確認する
-  - title: Argo CD ImageUpdaterをインストール
+  - title: Argo CD ImageUpdater をインストール
     body: |
-      ECRにプッシュしたイメージをArgo CDで自動的に更新するためのImageUpdaterをインストールする。
+      ECRにプッシュしたイメージを Argo CD で自動的に更新するための拡張機能 ImageUpdater をインストールする。
       コードは`codes/actions/k8s`ディレクトリに配置する。
+
+
+
+
+      # 参考
+      - Argo CD のデフォルトの同期間隔は最大3分です。[Automated Sync Policy](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/#automated-sync-semantics)
+      - Image Updater のデフォルトの同期間隔は2分です。[Configuration and command line reference](https://argocd-image-updater.readthedocs.io/en/stable/install/reference/)
+
