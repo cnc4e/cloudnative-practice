@@ -155,15 +155,7 @@ issues:
       # 欲しいもの
 
       - Runner Podに付与するIAMロール
-        - 必要な権限は以下の通り
-          - `ecr:GetAuthorizationToken`
-          - `ecr:BatchCheckLayerAvailability`
-          - `ecr:GetDownloadUrlForLayer`
-          - `ecr:BatchGetImage`
-          - `ecr:PutImage`
-          - `ecr:InitiateLayerUpload`
-          - `ecr:UploadLayerPart`
-          - `ecr:CompleteLayerUpload`
+        - 権限は`AmazonEC2ContainerRegistryPowerUser`
         - IAMロールは Pod Identity を使ってアタッチできるように信頼ポリシーを設定する
           - `Service:pods.eks.amazonaws.com`
           - `Action:["sts:AssumeRole","sts:TagSession"]`
@@ -213,9 +205,8 @@ issues:
       Podはコンテナです。コンテナの中でDockerを実行するには管理者権限が必要です。
       そのため、K8sのPodでDockerを実行するには特別な設定が必要でした。
       しかし、この特別な設定はセキュリティ上のリスクがあるため、K8sでは推奨されていません。
-      そこで、K8sでは`docker buildx`を使用してコンテナイメージをビルドすることが推奨されています。
-      `docker buildx`はK8sのPodでDockerイメージをビルドするためのツールです。
-      `docker buildx`を使用することで、K8sのPodでDockerイメージをビルドすることができます。
+      そこで、K8sでは[docker buildx](https://matsuand.github.io/docs.docker.jp.onthefly/buildx/working-with-buildx/)を使用してコンテナイメージをビルドします。
+      docker buildx を使用することで、K8sのPodでDockerイメージをビルドすることができます。
 
       # 欲しいもの
       - フロントエンドのイメージをビルドして ECR にプッシュするワークフロー
@@ -234,7 +225,7 @@ issues:
             - `driver-opts`には最低限以下を指定
               - `namespace=arc-runners`
           - イメージタグの設定
-            - `run`ステップで以下のコマンドを実行
+            - `run`で以下のコマンドを実行
               ```bash
               echo "IMAGE_TAG=$(TZ='Asia/Tokyo' date +'%Y%m%d%H%M')" >> $GITHUB_ENV
               ```
@@ -317,8 +308,8 @@ issues:
       - Settings > Repositories を開く
       - `Connect Repo`をクリック
       - 以下のように入力して`CONNECT`
-        - Choose your connection method: VIA http/https
-        - CONNECT REPO USING SSH
+        - Choose your connection method: `VIA http/https``
+        - CONNECT REPO USING HTTP/HTTPS
           - Name: 任意(自身のGitHubアカウント名/cloudnative-practiceなど)
           - Project: default
           - Repository URL: 自身の`cloudnative-practice`リポジトリのURL（例：https://github.com/アカウント名/cloudnative-practice）
@@ -338,7 +329,7 @@ issues:
       
       # Argo CD の設定
       Argo CD の設定もK8sマニフェストで管理できます。
-      とくに、アプリケーションの定義はK8sの`Application`リソースで行います。
+      とくに、アプリケーションの定義は Argo CD 用のカスタムリソースである`Application`リソースで行います。
 
       # 欲しいもの
       - フロントエンドのapplicationリソース
@@ -347,7 +338,8 @@ issues:
         - Namespaceは`argocd`
         - targetRevisionは`main`ブランチを指定
         - pathはフロントエンドのK8sマニフェストが配置されている`codes/frontend.k8s`ディレクトリを指定
-        - syncPolicyは`automated`を指定
+        - syncPolicyは`automated`を指定（[参考]](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/)）
+          - automatedのオプションは特にしていしない(`{}`)
 
       # 確認
       - Argo CD の Web UI でアプリケーションが追加されていることを確認する
@@ -380,7 +372,7 @@ issues:
       - また、追加したアプリケーションの`SYNC STATUS`が`Synced`になっていることを確認する
   - title: Argo CD ImageUpdater をインストール
     body: |
-      ECRにプッシュしたイメージを Argo CD で自動的に更新するための拡張機能 ImageUpdater をインストールする。
+      ECRにプッシュしたイメージを Argo CD で自動的に更新するための拡張機能 [ImageUpdater](https://argocd-image-updater.readthedocs.io/en/stable/) をインストールする。
       コードは`codes/actions/k8s`ディレクトリに配置する。
       コードを作成し、リソースのデプロイが完了したらPRを出す。
 
