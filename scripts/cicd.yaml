@@ -295,7 +295,7 @@ issues:
           ```
           - ブラウザで`https://localhost:8080`にアクセスする
             - セキュリティ警告は無視する
-  - title: Arog CD のリポジトリ設定をする
+  - title: Argo CD のリポジトリ設定をする
     body: |
       Argo CD で自身の`cloudnative-practice`リポジトリにアクセスするための設定を行う。
 

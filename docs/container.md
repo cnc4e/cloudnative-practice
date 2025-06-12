@@ -1,6 +1,6 @@
 [Top](../README.md)  
 前: [構成管理](./configuration.md)  
-次: [作成中]()  
+次: [CI/CD](./cicd.md)  
 
 ---
 
@@ -114,4 +114,4 @@ Kubernetesの運用は複雑で、クラスタのセットアップや管理に�
 
 [Top](../README.md)  
 前: [構成管理](./configuration.md)  
-次: [作成中]()  
+次: [CI/CD](./cicd.md)  
