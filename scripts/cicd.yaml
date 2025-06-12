@@ -253,6 +253,9 @@ issues:
       # 確認
       マージ後、ワークフローが実行され、ECRにフロントエンドのイメージがプッシュされることを確認する。
 
+      # その他
+      K8sマニフェストは更新しない。Argo CD ImageUpdater で自動的に更新されるため。
+
   - title: バックエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する
     body: |
       GitHub Actions のワークフローでバックエンドのイメージをビルドして ECR にプッシュする。
@@ -271,6 +274,9 @@ issues:
 
       # 確認
       マージ後、ワークフローが実行され、ECRにフロントエンドのイメージがプッシュされることを確認する。
+
+      # その他
+      K8sマニフェストは更新しない。Argo CD ImageUpdater で自動的に更新されるため。
   - title: Argo CD をインストールする
     body: |
       K8s 専用の継続的デリバリー(CD)ツールである [Argo CD](https://argo-cd.readthedocs.io/en/stable/) をインストールする。  
@@ -280,7 +286,7 @@ issues:
       # 欲しいもの
       - Argo CD
         - helmを使いインストール
-          - チャートは[argo-helm](https://github.com/argoproj/argo-helm)を使用する
+          - チャートは[argo-helm](https://github.com/argoproj/argo-helm)にある[argo-cd](https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd)を使用する
           - Namespaceは`argocd`を指定
           - オプションは特に不要
         - `helm install`のコマンド全文を`actions/k8s`ディレクトリ配下の`README.md`に書いて保存すること
@@ -376,11 +382,84 @@ issues:
     body: |
       ECRにプッシュしたイメージを Argo CD で自動的に更新するための拡張機能 ImageUpdater をインストールする。
       コードは`codes/actions/k8s`ディレクトリに配置する。
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
 
+      # 前提
+      - Argo CD をインストールする
+      
+      # 欲しいもの
+      - Argo CD ImageUpdater
+        - helmを使いインストール
+          - チャートは[argo-helm](https://github.com/argoproj/argo-helm)にある[argocd-image-updater](https://github.com/argoproj/argo-helm/tree/main/charts/argocd-image-updater)を使用する
+          - Namespaceは`argocd`を指定
+          - ECRへログインするためのオプションを設定(value.yamlに記載)
+            - パラメーターは[この](https://github.com/argoproj-labs/argocd-image-updater/issues/112#issuecomment-2235983279)issueコメントを参考に調整する
+        - `helm install`のコマンド全文を`actions/k8s`ディレクトリ配下の`README.md`に書いて保存すること
+  - title: Argo CD ImageUpdater に Pod Identity でIAMロールをアタッチする
+    body: |
+      ImageUpdater が ECR を確認できるようにIAMロールを設定する。
+      コードは`codes/argocd/terraform`ディレクトリに配置する。
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
 
+      # 前提
+      - Argo CD ImageUpdater をインストール
+      
+      # 欲しいもの
+      - ImageUpdater Podに付与するIAMロール
+        - 権限はAWSマネージドポリシーの`AmazonEC2ContainerRegistryReadOnly`
+        - IAMロールは Pod Identity を使ってアタッチできるように信頼ポリシーを設定する
+          - `Service:pods.eks.amazonaws.com`
+          - `Action:["sts:AssumeRole","sts:TagSession"]`
+      - Pod Identity の設定 [aws_eks_pod_identity_association](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_pod_identity_association)
+        - ImageUpdater Pod用に作成したロールを Pod Identity にアタッチする
+        - ImageUpdater Pod の Namespace と ServiceAccount は以下を指定
+          - ns:argocd
+          - sa:argocd-image-updater
+        - EKSクラスタ名はできればeksモジュールからoutputで取得すること
+  - title: フロントエンドのイメージを自動更新する
+    body: |
+      ECRのイメージ更新を検知してフロントエンドのDeploymentを自動的に更新する。
 
+      # 前提
+      - Argo CD ImageUpdater に Pod Identity でIAMロールをアタッチする
+
+      # 欲しいもの
+      - フロントエンドのアプリケーションに ImageUpdater の自動更新設定を追加する
+        - `codes/frontend/k8s/application.yaml`に[例](https://argocd-image-updater.readthedocs.io/en/stable/examples/)を参考に設定を追加する
+          - イメージバージョンの書き込み方式は`git`にする
+          - イメージリストは`frontend`をエイリアスに追加
+          - 更新戦略は最新イメージにする
+
+      # 確認
+      - K8sで動くフロンエンドのDeploymentが`フロンエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する`でビルドしたイメージに更新されることを確認する
+  - title: バックエンドのイメージを自動更新する
+    body: |
+      ECRのイメージ更新を検知してバックエンドのDeploymentを自動的に更新する。
+
+      # 前提
+      - Argo CD ImageUpdater に Pod Identity でIAMロールをアタッチする
+
+      # 欲しいもの
+      - バックエンドのアプリケーションに ImageUpdater の自動更新設定を追加する
+        - `codes/backend/k8s/application.yaml`に[例](https://argocd-image-updater.readthedocs.io/en/stable/examples/)を参考に設定を追加する
+          - イメージバージョンの書き込み方式は`git`にする
+          - イメージリストは`backend`をエイリアスに追加
+          - 更新戦略は最新イメージにする
+
+      # 確認
+      - K8sで動くバックエンドのDeploymentが`バックエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する`でビルドしたイメージに更新されることを確認する
+  - title: アプリケーションの更新からDeploymentの更新まで一気通貫で確認する
+    body: |
+      アプリケーション更新 > GitHub Actions (イメージビルド&プッシュ) > Argo CD ImageUpdater (イメージ更新) > Argo CD (マニフェストデプロイ) まで一気通貫で確認する。
+
+      # 前提
+      - フロントエンドのイメージを自動更新する
+      - バックエンドのイメージを自動更新する
+
+      # やること
+      - フロントエンドまたはバックエンドのアプリケーションコードを更新する
+      - しばらく(10分程)待ち、K8s の Deployment が更新されることを確認する
 
       # 参考
       - Argo CD のデフォルトの同期間隔は最大3分です。[Automated Sync Policy](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/#automated-sync-semantics)
       - Image Updater のデフォルトの同期間隔は2分です。[Configuration and command line reference](https://argocd-image-updater.readthedocs.io/en/stable/install/reference/)
-
