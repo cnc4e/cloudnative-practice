@@ -6,7 +6,7 @@ const PORT = 3000;
 app.use(cors());
 
 app.get('/api/message', (req, res) => {
-  res.json({ message: 'こんにちは、フロントエンドさん！CIでビルド' });
+  res.json({ message: 'こんにちは、フロントエンドさん！' });
 });
 
 app.listen(PORT, () => {
