@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scale-up-all
+  namespace: default
+spec:
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "0 0 * * 1-5" # 月～金曜 日本時間9時（UTC 0時）に実行
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: scale-down-all
+          containers:
+            - name: kubectl
+              image: bitnami/kubectl:latest
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  kubectl get deploy --all-namespaces -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name --no-headers | \
+                  while read ns name; do
+                    kubectl -n $ns patch deploy $name -p '{"spec":{"replicas":1}}'
+                  done
+                  kubectl get statefulset --all-namespaces -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name --no-headers | \
+                  while read ns name; do
+                    kubectl -n $ns patch statefulset $name -p '{"spec":{"replicas":1}}'
+                  done
+                  # DaemonSetのPodを再度起動（nodeSelectorを空に戻す）
+                  kubectl get daemonset --all-namespaces -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name --no-headers | \
+                  while read ns name; do
+                    kubectl -n $ns patch daemonset $name -p '{"spec":{"template":{"spec":{"nodeSelector":{}}}}}'
+                  done
+          restartPolicy: OnFailure

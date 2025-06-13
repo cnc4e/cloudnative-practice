@@ -1,0 +1,3 @@
+# K8s上の全Deployment/StatefulSetをreplicas=0にスケールダウンするCronJob
+
+このディレクトリには、Kubernetes上の全てのDeploymentとStatefulSetのレプリカ数を0にするCronJobと、そのためのRBAC設定を配置します。

@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scale-down-all
+  namespace: default
+spec:
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  schedule: "0 10 * * 1-5" # 月～金曜 日本時間19時（UTC 10時）に実行
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: scale-down-all
+          containers:
+            - name: kubectl
+              image: bitnami/kubectl:latest
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  kubectl get deploy --all-namespaces -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name --no-headers | \
+                  while read ns name; do
+                    kubectl -n $ns patch deploy $name -p '{"spec":{"replicas":0}}'
+                  done
+                  kubectl get statefulset --all-namespaces -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name --no-headers | \
+                  while read ns name; do
+                    kubectl -n $ns patch statefulset $name -p '{"spec":{"replicas":0}}'
+                  done
+                  # DaemonSetのPodも全て停止（nodeSelectorを存在しない値に変更）
+                  kubectl get daemonset --all-namespaces -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name --no-headers | \
+                  while read ns name; do
+                    kubectl -n $ns patch daemonset $name -p '{"spec":{"template":{"spec":{"nodeSelector":{"non-existent":"true"}}}}}'
+                  done
+                  # arc-runner-set-で始まるPodを全て削除
+                  kubectl get pods --all-namespaces -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name --no-headers | \
+                    awk '$2 ~ /^arc-runner-set-/ {print $1, $2}' | \
+                    while read ns name; do
+                      kubectl -n $ns delete pod $name
+                    done
+          restartPolicy: OnFailure
