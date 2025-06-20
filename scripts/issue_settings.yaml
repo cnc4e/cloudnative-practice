@@ -19,3 +19,9 @@ settings:
       color: f9d0c4
       description: インフラや設定の管理
     issue_yaml: cicd.yaml
+  - name: o11y
+    label:
+      name: オブザーバビリティ
+      color: 7b00a8
+      description: インフラや設定の管理
+    issue_yaml: o11y.yaml

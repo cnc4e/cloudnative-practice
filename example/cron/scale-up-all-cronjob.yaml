@@ -30,6 +30,8 @@ spec:
                   # DaemonSetのPodを再度起動（nodeSelectorを空に戻す）
                   kubectl get daemonset --all-namespaces -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name --no-headers | \
                   while read ns name; do
-                    kubectl -n $ns patch daemonset $name -p '{"spec":{"template":{"spec":{"nodeSelector":{}}}}}'
+                    kubectl -n $ns patch daemonset $name --type='json' -p='[{"op": "remove", "path": "/spec/template/spec/nodeSelector/non-existent"}]'
                   done
+                  # # amazon-cloudwatch namespaceのcloudwatch-agentを削除
+                  # kubectl -n amazon-cloudwatch delete daemonset cloudwatch-agent
           restartPolicy: OnFailure

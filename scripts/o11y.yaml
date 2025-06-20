@@ -1,0 +1,100 @@
+issues:
+  - title: EKSアドオン：Cloudwatch Observability を導入する
+    body: |
+        EKSクラスタにCloudwatch Observability アドオンを導入する**o11y**モジュールを作成する。  
+        コードは`codes`ディレクトリ配下に`o11y/terraform`ディレクトリを作成し、そこにコードを配置する。  
+        コードを作成し、リソースのデプロイが完了したらPRを出す。
+        
+        # Cloudwatch Observability アドオンについて
+        [CloudWatch Observability アドオン](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/workloads-add-ons-available-eks.html#amazon-cloudwatch-observability)は、EKSクラスタのメトリクスやログを自動で収集・可視化できるAWS公式の拡張機能です。
+        導入することで、クラスタやアプリケーションの状態をCloudWatch上で簡単に監視・分析できます。
+        運用負荷を下げつつ、障害検知やパフォーマンス分析が容易になります。
+
+        CloudWatch Observability アドオンには主に2つの機能が含まれます。
+        - **CloudWatch Agent によるメトリクス収集**: CloudWatch Agent が DaemonSet としてデプロイされ、各ノードからメトリクスを収集します。CloudWatch Agent により収集されるメトリクスは2通りありますが、より強力な[強化されたオブザーバビリティ](https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/container-insights-detailed-metrics.html)が収集されます。
+        - **Fluent Bit によるログ収集**: Fluent Bit が DaemonSet としてデプロイされ、各ノードからワーカーコンポーネント（kubelet等）とPodログを収集します。Fluent Bit は CloudWatch Logs にログを送信します。
+
+        # 欲しいもの
+        - EKSアドオン(Cloudwatch Observability)
+          - アドオンのバージョンは以下コマンド等でクラスタバージョンに対応した最新を確認して指定（クラスタバージョンは自身の環境に合わせる）
+            ```
+            aws eks describe-addon-versions \
+            --addon-name amazon-cloudwatch-observability \
+            --kubernetes-version 1.32 \
+            --query "addons[].addonVersions[].addonVersion" \
+            --output table
+            ```
+          - Pod Identity によるIAMロールのアタッチもアドオンの設定でやる
+            - IAMロールには`CloudWatchAgentServerPolicy`のポリシーをアタッチ
+            - IAMロールには Pod Identity の信頼ポリシーも設定する
+            - ServiceAccount は`cloudwatch-agent`
+        
+        # 確認
+        - アドオン導入後、マネコンで CloudWatch > インサイト > Container Insights を開く。下部のクラスターの概要にEKSクラスタが表示されていることを確認する。（名前を選択するとさらに詳細なメトリクスが確認できる。）
+
+        # その他
+        参考：[EKS クラスターでの Observability の有効化](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/observability.html)
+  - title: レプリカ数のメトリクス監視を設定する
+    body: |
+        Cloudwatch Observability アドオンで収集したメトリクスを使いメトリクス監視を実装します。
+        **o11y**モジュールを改良し、以下のメトリクス監視を設定します。
+        コードを作成し、リソースのデプロイが完了したらPRを出す。
+
+        # 前提
+        - EKSアドオン：Cloudwatch Observability を導入する
+        
+        # 監視する内容
+        K8s環境では個々のPodだけでなく、Deployment単位での監視が重要です。
+        今回はDeploymentで展開したPod群の数を監視し、閾値を下回った時にアラーム状態にします。
+
+        # 欲しいもの
+        - CloudWatch アラーム
+          - メトリクスは以下を使う
+            - 名前空間: ContainerInsights
+            - ディメンション:
+              - ClusterName: クラスタ名
+              - Namespace: default
+              - Service: frontend
+            - メトリクス名: service_number_of_running_pods
+          - 条件: メトリクスが`1`未満のときにアラーム状態とする
+          - 期間: 1分
+          - 統計: 平均
+          - 欠落データの処理: 不正
+          - アクション: 一旦なしでいいです（任意でSNSとかを設定してもいいです）
+            
+          # 確認
+          frontend の Deployment のレプリカ数を0に変更する。しばらく待った後、マネコンで CloudWatch > アラーム > アラーム状態 でアラーム状態になることを確認。
+          確認出来たらレプリカ数を元に戻す。
+  - title: メッセージに基づくアラートを設定する
+    body: |
+        Cloudwatch Observability アドオンで収集したログを使い、ログのメッセージ監視を実装します。
+        **o11y**モジュールを改良し、以下のメッセージ監視を設定します。
+        コードを作成し、リソースのデプロイが完了したらPRを出す。
+
+        # 前提
+        - EKSアドオン：Cloudwatch Observability を導入する
+        
+        # やり方
+        Cloudwatch Observability アドオンはデフォルトだと CloudWatch Logs の`/aws/containerinsights/クラスタ名/application`ロググループにすべてのPodのログを転送します。
+        このロググループにメトリクスフィルターやサブスクリプションフィルターを設定することで、特定のログメッセージに基づくアラーム発報ができます。
+        今回はメトリクスフィルターを選定し、特定のログメッセージが出力されたときにメトリクスをカウントし、アラート状態にします。
+
+        # 欲しいもの
+        - CloudWatch Logs メトリクスフィルター
+          - ロググループ: `/aws/containerinsights/クラスタ名/application`
+          - フィルターパターン: `%log-test%`
+          - メトリクス
+            - 名前空間: 任意の名前空間
+            - メトリクス名: 任意のメトリクス名
+            - 値: 1
+        - CloudWatch アラーム
+          - 上記メトリクスフィルターで作成したメトリクスが1以上のときにアラーム状態とする
+          - 期間: 1分
+          - 欠落データは適正として処理する
+
+          # 確認
+          ブラウザ、curlコマンド等でALBのDNS名でアクセスする。その際、URLの最後に`/log-test`を付ける。以下例。リクエストは404で失敗するが、ログに`log-test`という文字列が含まれるログが出力される。
+          ```
+          curl http://k8s-default-frontend-a5f3761cef-8c47c061aa1111a6.elb.ap-northeast-2.amazonaws.com/log-test
+          ```
+          しばらく待った後、マネコンで CloudWatch > アラーム > アラーム状態 でアラーム状態になることを確認。
