@@ -93,7 +93,7 @@ issues:
           - 欠落データは適正として処理する
 
           # 確認
-          ブラウザ、curlコマンド等でALBのDNS名でアクセスする。その際、URLの最後に`/log-test`を付ける。以下例。リクエストは404で失敗するが、ログに`log-test`という文字列が含まれるログが出力される。
+          ブラウザ、curlコマンド等でNLBのDNS名でアクセスする。その際、URLの最後に`/log-test`を付ける。以下例。リクエストは404で失敗するが、ログに`log-test`という文字列が含まれるログが出力される。
           ```
           curl http://k8s-default-frontend-a5f3761cef-8c47c061aa1111a6.elb.ap-northeast-2.amazonaws.com/log-test
           ```
