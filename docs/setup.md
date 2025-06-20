@@ -47,8 +47,10 @@ GitHubアカウントの個人アクセストークン(PAT)を持っていない
     - `Issues`: Read & Write
     - `Contents`: Read & Write
     - `Metadata`: Read (他の権限付けると自動でつくはず)
+    - `Workflows`: Read & Write
 - Personal access tokens (classic)の場合
   - `repo`
+  - `workflow`
 
 # 端末の準備
 
