@@ -11,7 +11,7 @@ This is a **Cloud-Native Practice Repository** - a Japanese educational project 
 ### Core Application Components
 - **Backend**: Node.js Express API (`codes/backend/app/`)
 - **Frontend**: React application with Nginx (`codes/frontend/app/`)
-- **Infrastructure**: Terraform modules for AWS resources (`example/`)
+- **Infrastructure**: Terraform modules for AWS resources
 - **Kubernetes**: Complete K8s manifests and configurations
 
 ### Key Directories
@@ -42,9 +42,10 @@ terraform apply
 Key Terraform conventions:
 - Students create modules like `/codes/eks/`, `/codes/ecr/`, `/codes/network/`
 - State backend: S3 + DynamoDB (reference in `/example/tfbackend/`)
-- File patterns: `_versions.tf`, `_locals.tf`, `_data.tf`
-- Consistent tagging: `cn-practice` project, `mori` owner
-- Region: `ap-northeast-2` (Seoul)
+- for `/example/` 
+  - File patterns: `_versions.tf`, `_locals.tf`, `_data.tf`
+  - Consistent tagging: `cn-practice` project, `mori` owner
+  - Region: `ap-northeast-2` (Seoul)
 - **Reference**: Check `/example/` for implementation examples when stuck
 
 ### Container Development
