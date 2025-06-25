@@ -50,24 +50,66 @@
 
 # プラクティス
 
-1. [環境セットアップ](docs/setup.md)
-2. [CloudNativeの基礎](docs/cloudnative.md)
-3. [構成管理](docs/configuration.md)
-4. [コンテナ](docs/container.md)
-5. [CI/CD](docs/cicd.md)
-6. [オブザーバビリティ](docs/observability.md)
+プラクティスは大きく2部構成になっています。`基本構成`はクラウドネイティブの基礎を学ぶための内容で、`追加課題`は実PJに対応可能なレベルを目指すための内容です。
 
-- 可用性
-  - ヘルスチェック
-  - アップデート戦略
-  - 安全なPod停止
-- セキュリティ
-  - コンテナ
-    - イメージの設定
-    - イメージスキャン
-  - Pod
-    - Podの設定
-    - Podの通信制限
-- 運用
-  - 保守アクセス
-  - クラスタバージョンアップ
+`基本構成`は順番に実施することを推奨します。`追加課題`は興味のあるものを選んで実施してください。
+
+1. 基本構成
+  1. [環境セットアップ](docs/setup.md)
+  2. [CloudNativeの基礎](docs/cloudnative.md)
+  3. [構成管理](docs/configuration.md)
+  4. [コンテナ](docs/container.md)
+  5. [CI/CD](docs/cicd.md)
+  6. [オブザーバビリティ](docs/observability.md)
+2. 追加課題
+  1. [クラスタ構成]()
+    - ノードタイプの混在
+    - Ingressを使った外部公開
+  2. [可用性](docs/availability.md)
+    - service（基本すぎるのでやらない）
+    - probe
+    - graceful shutdown
+    - affinity
+    - PDB
+    - update strategy
+  3. [性能・拡張性](docs/scalability.md)
+    - resources
+    - HPA
+    - VPA
+    - ノードの拡張
+  4. [可観測性](docs/advanced-observability.md)
+    - ロググループの分割
+    - ログの構造化
+    - 構造化ログのメトリクス化
+    - Application Insights を使った可視化
+  5. [セキュリティ](docs/security.md)
+    - クラスタセキュリティ
+      - エンドポイントの種類
+      - エンドポイントへのアクセス制限
+      - クラスタの監査ログ
+    - Podのセキュリティ
+      - NetworkPolicy
+      - Security Group Policy
+      - K8s RBAC
+      - Pod Identity（すでにやっているからやらない）
+      - SecurityContext
+      - Falco
+    - Nodeのセキュリティ
+      - SELinuxの有効化
+      - GuradDuty Malware Protection
+    - コンテナのセキュリティ
+      - 信頼できる提供元のイメージを使用
+      - イメージスキャン
+      - 必要最小限のもの（マルチステートビルド）
+      - プライベートレジストリ
+    - IaCセキュリティ
+      - 機密情報の管理
+  6. [運用・保守](docs/operations.md)
+    - ポリシー制御
+    - CI/CDの活用
+      - イメージスキャン
+      - 静的解析
+      - Planの実施
+      - ドリフト検知
+    - ブランチ戦略
+    - クラスタのバージョンアップ
