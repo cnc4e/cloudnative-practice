@@ -39,6 +39,7 @@
     - 1.Beginner(初級) まで完了
 - AWSアカウントを持っている
 - AWSについての基礎的な知識（VPC、subnet等）がある
+- GitHubアカウントを持っている
 - Linuxの基本的なコマンド(cd、ls等)が使える
 
 # 想定環境
@@ -54,35 +55,36 @@
 
 `基本構成`は順番に実施することを推奨します。`追加課題`は興味のあるものを選んで実施してください。
 
-1. 基本構成
-  1. [環境セットアップ](docs/setup.md)
-  2. [CloudNativeの基礎](docs/cloudnative.md)
-  3. [構成管理](docs/configuration.md)
-  4. [コンテナ](docs/container.md)
-  5. [CI/CD](docs/cicd.md)
-  6. [オブザーバビリティ](docs/observability.md)
-2. 追加課題
-  1. [クラスタ構成]()
+- 基本構成
+  - [環境セットアップ](docs/setup.md)
+  - [CloudNativeの基礎](docs/cloudnative.md)
+  - [構成管理](docs/configuration.md)
+  - [コンテナ](docs/container.md)
+  - [CI/CD](docs/cicd.md)
+  - [オブザーバビリティ](docs/observability.md)
+- 追加課題
+  - [クラスタ構成]()
     - ノードタイプの混在
     - Ingressを使った外部公開
-  2. [可用性](docs/availability.md)
+  - [可用性](docs/availability.md)
     - service（基本すぎるのでやらない）
     - probe
     - graceful shutdown
     - affinity
     - PDB
+    - ptsc
     - update strategy
-  3. [性能・拡張性](docs/scalability.md)
+  - [性能・拡張性](docs/scalability.md)
     - resources
     - HPA
     - VPA
     - ノードの拡張
-  4. [可観測性](docs/advanced-observability.md)
+  - [可観測性](docs/advanced-observability.md)
     - ロググループの分割
     - ログの構造化
     - 構造化ログのメトリクス化
     - Application Insights を使った可視化
-  5. [セキュリティ](docs/security.md)
+  - [セキュリティ](docs/security.md)
     - クラスタセキュリティ
       - エンドポイントの種類
       - エンドポイントへのアクセス制限
@@ -104,7 +106,7 @@
       - プライベートレジストリ
     - IaCセキュリティ
       - 機密情報の管理
-  6. [運用・保守](docs/operations.md)
+  - [運用・保守](docs/operations.md)
     - ポリシー制御
     - CI/CDの活用
       - イメージスキャン
