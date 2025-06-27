@@ -17,3 +17,42 @@ issues:
         - portはコンテナの待ち受けポートを指定する
         - 監視間隔は何秒でもいいが、失敗する順番は rediness -> liveness にすること
           - こうすることでまずServiceのトラフィックを受け付けないようにし、次にPodを再起動することができる
+
+  - title: Podにgracefulshutdownを設定する
+    body: |
+      ## gracefulshutdownとは？
+      
+      アプリケーションのPodが停止する際に、安全に終了するための仕組みです。
+      
+      ## なぜ必要なのか？
+      
+      Podを停止する際、以下の2つの処理が**同時に**実行されます：
+      1. Podの停止処理
+      2. ServiceからそのPodを除外する処理
+      
+      この2つの処理が同時に行われるため、「Podは停止中だが、まだServiceからトラフィックが送られてくる」という状況が発生します。これにより、ユーザーのリクエストが失敗してしまいます。
+      
+      ## どうやって解決するか？
+      
+      gracefulshutdownを設定することで、以下の順序で安全に停止できます：
+      
+      1. **preStop処理**：Podが停止する前に、Serviceからの除外を待つため少し待機（Sleep）します
+      2. **terminationGracePeriodSeconds**：Podが完全に停止するまでの猶予時間を設定します
+      
+      ### 具体的な流れ
+      
+      1. Podに停止指示が出される
+      2. **preStop処理が実行**：数秒待機して、Serviceからの除外を待つ
+      3. **SIGTERMシグナル送信**：アプリケーションに「終了準備をしてください」という合図
+      4. **アプリケーションの終了処理**：現在処理中のリクエストを完了させる
+      5. **猶予期間終了**：設定した時間内に終了しない場合は強制終了
+      
+      ### 設定値の目安
+      
+      - **preStop処理**：5-10秒程度の待機
+      - **terminationGracePeriodSeconds**：30秒程度（preStop時間 + アプリケーション終了時間）
+
+      # プラクティス
+      - フロントエンドおよびバックエンドのPodにgracefulshutdownを設定する
+        - `terminationGracePeriodSeconds`を設定して、Podが停止するまでの猶予時間を設定する
+        - `preStop`フックを設定して、Serviceからの除外を待つためにSleepさせる
