@@ -22,6 +22,12 @@ This is a **Cloud-Native Practice Repository** - a Japanese educational project 
 
 ## Development Workflows
 
+### Git Commit Conventions
+**IMPORTANT**: All commit messages must include the issue number at the beginning:
+- Format: `#<issue-number> <commit message>`
+- Extract issue number from branch name (e.g., branch `12-gracefulshutdown` → issue `#12`)
+- Example: `#12 graceful shutdownの実装を追加`
+
 ### Issue Management
 Create GitHub issues for practice exercises using:
 ```bash
