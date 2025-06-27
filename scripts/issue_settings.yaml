@@ -25,3 +25,9 @@ settings:
       color: 7b00a8
       description: インフラや設定の管理
     issue_yaml: o11y.yaml
+  - name: availability
+    label:
+      name: 可用性
+      color: c0fed0
+      description: インフラや設定の管理
+    issue_yaml: availability.yaml

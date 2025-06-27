@@ -79,6 +79,30 @@ issues:
       helmの使い方は次を参考にすること。
       - [Helmの使い方](https://helm.sh/ja/docs/intro/using_helm/)
       - [Helmの使い方を3分で理解する](https://qiita.com/MahoTakara/items/3c509235cc18bd407f07)
+  - title: Runner用のServiceAccount、Role、RoleBindingsを作成する
+    body: |
+      Runner Pod が K8s 内部のリソースを操作出来るように関連リソースを作成する。  
+      コードは`codes/actions/k8s`ディレクトリに配置する。  
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
+
+      # 前提
+      - GitHub Actions Runnerのセットアップが完了していること
+
+      # 欲しいもの
+      - Runner用のServiceAccount
+        - 名前は`arc-runner`
+        - Namespaceは`arc-runners`
+      - Runner用のRole
+        - 名前は`arc-runner`
+        - Namespaceは`arc-runners`
+        - 以下の権限を持つ
+          - `apps` APIグループの`deployments`リソースに対して`create`, `get`, `delete`の権限
+          - `""` APIグループの`pods`リソースに対して`get`, `list`の権限
+          - `""` APIグループの`pods/exec`リソースに対して`create`の権限
+      - Runner用のRoleBinding
+        - 名前は`arc-runner`
+        - Namespaceは`arc-runners`
+        - `arc-runner` ServiceAccount に対して `arc-runner` Role をバインドする
   - title: GitHub Actions の動作確認をする
     body: |
       セットアップしたセルフホストランナーでワークフローが実行できることを確認する。
@@ -104,36 +128,12 @@ issues:
               - name: 確認用の echo 出力
                 run: echo "🎉 Self-hosted Runner でワークフローが実行されました！"
         ```
-      - 変更をコミットし、GitHubにプッシュする。PRは不要（PRを出してもいい）。
+      - 変更をコミットし、GitHubにプッシュする。ブランチをmainにマージする。（PRは不要）
       - GitHubで Actions タブを開き、左のワークフロー一覧に`Self-hosted Runner Test`が表示されていることを確認
       - `Self-hosted Runner Test`を選択し`Run workflow`ボタンをクリックしてワークフローを実行
       - しばらくしてから画面をリロードするとワークフローが実行される。茶色は実行中、緑は成功、赤は失敗
       - 緑になったらワークフローを選択。実行されたジョブが表示される。`test-runner`ジョブを選択し、ジョブの詳細を表示
       - `確認用の echo 出力`のステップを選択し、`🎉 Self-hosted Runner でワークフローが実行されました！`と表示されていれば成功
-  - title: Runner用のServiceAccount、Role、RoleBindingsを作成する
-    body: |
-      Runner Pod が K8s 内部のリソースを操作出来るように関連リソースを作成する。  
-      コードは`codes/actions/k8s`ディレクトリに配置する。  
-      コードを作成し、リソースのデプロイが完了したらPRを出す。
-
-      # 前提
-      - GitHub Actions Runnerのセットアップが完了していること
-
-      # 欲しいもの
-      - Runner用のServiceAccount（Helmで作成済）
-        - 名前は`arc-runner`
-        - Namespaceは`arc-runners`
-      - Runner用のRole
-        - 名前は`arc-runner`
-        - Namespaceは`arc-runners`
-        - 以下の権限を持つ
-          - `apps` APIグループの`deployments`リソースに対して`create`, `get`, `delete`の権限
-          - `""` APIグループの`pods`リソースに対して`get`, `list`の権限
-          - `""` APIグループの`pods/exec`リソースに対して`create`の権限
-      - Runner用のRoleBinding
-        - 名前は`arc-runner`
-        - Namespaceは`arc-runners`
-        - `arc-runner` ServiceAccount に対して `arc-runner` Role をバインドする
   - title: Runner に Pod Identity でIAMロールをアタッチする
     body: |
       Runner が ECR にアクセスできるように、Pod Identity を使って IAM ロールをアタッチする。
@@ -143,6 +143,7 @@ issues:
       # 前提
 
       - GitHub Actions Runnerのセットアップが完了していること
+      - Runner用のServiceAccount、Role、RoleBindingsを作成していること
 
       # EKSのPodのIAMロールについて
 
