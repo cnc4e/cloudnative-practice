@@ -84,3 +84,32 @@ issues:
         - **バックエンドのPod同士**: 異なるノードに分散配置（podAntiAffinity）
         - **フロントエンドとバックエンド**: 同じノードに配置（podAffinity）
         - labelSelectorは各アプリケーションの`app`ラベルを使用する
+
+  - title: PodDisruptionBudget（PDB）を設定する
+    body: |
+      PodDisruptionBudget（PDB）は、計画的なメンテナンス（ノードのアップグレードなど）中に同時に停止できるPodの数を制限することで、アプリケーションの可用性を保証します。
+
+      ## PDBの重要性
+
+      Kubernetesクラスターでは、以下のような計画的なメンテナンスが発生します：
+      - ノードのアップグレード
+      - クラスターのスケーリング
+      - ノードの再起動
+
+      PDBを設定することで、これらのメンテナンス中でも最低限必要なPod数を維持し、サービスの継続性を保証できます。特に EKS AutoMode はノードを最大21日で強制的に入れ替えるためPDBの設定は非常に重要です。
+
+      ## PDBの設定項目
+
+      - **minAvailable**: 最低限維持する必要があるPod数（数値または割合）
+      - **maxUnavailable**: 同時に停止できる最大Pod数（数値または割合）
+      - **selector**: 対象となるPodを選択するためのラベルセレクター
+
+      ## 設定の考え方
+
+      - **単一Pod構成**: `minAvailable: 1` で最低1つのPodを維持
+      - **複数Pod構成**: `minAvailable: 50%` で半数以上のPodを維持
+      - **高可用性要求**: より厳しい条件を設定
+
+      # プラクティス
+      - フロントエンドおよびバックエンドにPodDisruptionBudget（PDB）を設定する
+        - 最低1つのPodを常に稼働状態にする
