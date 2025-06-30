@@ -56,3 +56,31 @@ issues:
       - フロントエンドおよびバックエンドのPodにgracefulshutdownを設定する
         - `terminationGracePeriodSeconds`を設定して、Podが停止するまでの猶予時間を設定する
         - `preStop`フックを設定して、Serviceからの除外を待つためにSleepさせる
+
+  - title: Podにaffinityを設定する
+    body: |
+      Podのaffinityを設定することで、Podの配置を制御し、可用性やパフォーマンスを向上させることができます。
+      
+      ## affinityの種類
+      
+      - **nodeAffinity**: 特定のノードにPodを配置する
+      - **podAffinity**: 特定のPodと同じノードにPodを配置する
+      - **podAntiAffinity**: 特定のPodと異なるノードにPodを配置する
+      
+      ## 設定レベル
+      
+      - **requiredDuringSchedulingIgnoredDuringExecution**: 必須条件（Hard制約）
+      - **preferredDuringSchedulingIgnoredDuringExecution**: 優先条件（Soft制約）
+      
+      ## 実践的な使用例
+      
+      - **高可用性のための分散配置**: 同じアプリケーションのPodを異なるノードに配置
+      - **通信効率のための集約配置**: 連携するアプリケーション同士を同じノードに配置
+      - **リソース効率化**: 特定のハードウェアリソースを持つノードにPodを配置
+      
+      # プラクティス
+      - フロントエンドとバックエンドのDeploymentにaffinityを設定する
+        - **フロントエンドのPod同士**: 異なるノードに分散配置（podAntiAffinity）
+        - **バックエンドのPod同士**: 異なるノードに分散配置（podAntiAffinity）
+        - **フロントエンドとバックエンド**: 同じノードに配置（podAffinity）
+        - labelSelectorは各アプリケーションの`app`ラベルを使用する
