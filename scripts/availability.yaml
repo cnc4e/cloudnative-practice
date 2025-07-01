@@ -145,7 +145,6 @@ issues:
       # プラクティス
       - フロントエンドおよびバックエンドにPodDisruptionBudget（PDB）を設定する
         - 最低1つのPodを常に稼働状態にする
-        - Update Strategyと連携して総合的な可用性を確保する
 
   - title: DeploymentのUpdate Strategyを設定する
     body: |
@@ -195,5 +194,3 @@ issues:
       # プラクティス
       - フロントエンドおよびバックエンドのDeploymentにRollingUpdate strategyを設定する
         - ゼロダウンタイムでの更新を実現するため`maxUnavailable: 0`、`maxSurge: 1`を設定する
-        - 設定後、イメージタグを変更してローリングアップデートの動作を確認する
-        - PDBと組み合わせて総合的な可用性戦略を構築する
