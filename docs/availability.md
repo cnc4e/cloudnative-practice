@@ -1,3 +1,7 @@
+[Top](../README.md)  
+
+---
+
 # 可用性
 
 このプラクティスでは、Kubernetesクラスターでアプリケーションの可用性を向上させるための設定について学習します。
@@ -61,4 +65,8 @@ K8sのワークロードに関する設定は利用者が直接管理できる�
   - Podにgracefulshutdownを設定する
   - Podにaffinityを設定する
   - PodDisruptionBudget（PDB）を設定する
-  - update strategy
+  - DeploymentのUpdate Strategyを設定する
+
+---
+
+[Top](../README.md)  

@@ -66,14 +66,10 @@
   - [クラスタ構成]()
     - ノードタイプの混在
     - Ingressを使った外部公開
+    - 用途に応じたノード分割
+    - 用途に応じたNamespace分割
+    - CNIの選択
   - [可用性](docs/availability.md)
-    - service（基本すぎるのでやらない）
-    - probe
-    - graceful shutdown
-    - affinity
-    - PDB
-    - ptsc
-    - update strategy
   - [性能・拡張性](docs/scalability.md)
     - resources
     - HPA
