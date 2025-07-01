@@ -130,6 +130,70 @@ issues:
       - **複数Pod構成**: `minAvailable: 50%` で半数以上のPodを維持
       - **高可用性要求**: より厳しい条件を設定
 
+      ## Update Strategyとの関係
+
+      PodDisruptionBudget（PDB）と、DeploymentのUpdate StrategyはどちらもPodの停止数を制御する設定ですが目的が異なります。PDBは計画的なメンテナンス時にPodの同時停止数を制限し、Update Strategyはアプリケーション更新時のPod置き換え方法を制御します。
+
+      Update StrategyとPDBは補完的に動作します：
+      - **Update Strategy**: アプリケーション更新時のPod置き換えを制御
+      - **PDB**: クラスターメンテナンス時のPod停止を制限
+
+      両方を設定することで、様々なシナリオでの可用性を保証できます：
+      - アプリケーション更新時: Update Strategyが適用
+      - ノードメンテナンス時: PDBが適用
+
       # プラクティス
       - フロントエンドおよびバックエンドにPodDisruptionBudget（PDB）を設定する
         - 最低1つのPodを常に稼働状態にする
+        - Update Strategyと連携して総合的な可用性を確保する
+
+  - title: DeploymentのUpdate Strategyを設定する
+    body: |
+      DeploymentのUpdate Strategyは、Podを更新する際の方法を制御します。適切なupdate strategyを設定することで、ダウンタイムを最小限に抑えながら安全にアプリケーションを更新できます。
+
+      ## Update Strategyの種類
+
+      - **RollingUpdate** (デフォルト): 古いPodを段階的に新しいPodに置き換える
+      - **Recreate**: 全ての古いPodを停止してから新しいPodを作成する
+
+      ## RollingUpdateの設定項目
+
+      - **maxUnavailable**: 更新中に同時に停止できる最大Pod数（数値または割合）
+      - **maxSurge**: 更新中に追加で作成できる最大Pod数（数値または割合）
+
+      ## 設定の考え方
+
+      - **ゼロダウンタイム更新**: `maxUnavailable: 0, maxSurge: 1` で常に最低限のPodを維持
+      - **高速更新**: `maxUnavailable: 50%, maxSurge: 50%` で並列度を上げる
+      - **リソース節約**: `maxSurge: 0, maxUnavailable: 1` で追加リソースを使わない
+
+      ## 実践的な例
+
+      ```yaml
+      spec:
+        strategy:
+          type: RollingUpdate
+          rollingUpdate:
+            maxUnavailable: 0
+            maxSurge: 1
+      ```
+
+      この設定により、更新中も常に最低限のPodが稼働し、ダウンタイムを回避できます。
+
+      ## PodDisruptionBudget（PDB）との関係
+
+      PodDisruptionBudget（PDB）と、DeploymentのUpdate StrategyはどちらもPodの停止数を制御する設定ですが目的が異なります。PDBは計画的なメンテナンス時にPodの同時停止数を制限し、Update Strategyはアプリケーション更新時のPod置き換え方法を制御します。
+
+      Update StrategyとPDBは補完的に動作します：
+      - **Update Strategy**: アプリケーション更新時のPod置き換えを制御
+      - **PDB**: クラスターメンテナンス時のPod停止を制限
+
+      両方を設定することで、様々なシナリオでの可用性を保証できます：
+      - アプリケーション更新時: Update Strategyが適用
+      - ノードメンテナンス時: PDBが適用
+
+      # プラクティス
+      - フロントエンドおよびバックエンドのDeploymentにRollingUpdate strategyを設定する
+        - ゼロダウンタイムでの更新を実現するため`maxUnavailable: 0`、`maxSurge: 1`を設定する
+        - 設定後、イメージタグを変更してローリングアップデートの動作を確認する
+        - PDBと組み合わせて総合的な可用性戦略を構築する
