@@ -92,7 +92,7 @@ Kubernetesの運用は複雑で、クラスタのセットアップや管理に�
 
 > 注意: issue対応はDockerとK8sの基本的な使い方を理解していることが前提です。[docker-practice](https://github.com/cnc4e/docker-practice)、[k8s-practice](https://github.com/cnc4e/k8s-practice)を先に学習してください。
 
-以下タイトルのissueを対応してください。issueを対応する流れは[こちら](./practice-flow.md)を参照してください。コーディングルールは[こちら](./coderule.md)を参照してください。もし詰まってしまった場合、[example](./example)ディレクトリにサンプルコードを用意していますので参考にしてください。
+以下タイトルのissueを対応してください。issueを対応する流れは[こちら](./practice-flow.md)を参照してください。コーディングルールは[こちら](./coderule.md)を参照してください。もし詰まってしまった場合、[example](../example)ディレクトリにサンプルコードを用意していますので参考にしてください。
 
 - EKSクラスタを作成する
 - ECRを作成する
@@ -104,7 +104,7 @@ Kubernetesの運用は複雑で、クラスタのセットアップや管理に�
 
 作成する環境は以下のイメージ図です。
 
-![configuration](./images/container.drawio.svg
+![configuration](./images/container.drawio.svg)
 
 ## issue対応後
 
