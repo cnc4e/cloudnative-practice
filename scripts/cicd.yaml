@@ -25,10 +25,33 @@ issues:
   #     helmの使い方は次を参考にすること。
   #     - [Helmの使い方](https://helm.sh/ja/docs/intro/using_helm/)
   #     - [Helmの使い方を3分で理解する](https://qiita.com/MahoTakara/items/3c509235cc18bd407f07)
+  - title: Runner用のServiceAccount、Role、RoleBindingsを作成する
+    body: |
+      Runner Pod が K8s 内部のリソースを操作出来るように関連リソースを作成する。  
+      コードは`codes`ディレクトリ配下に`actions/k8s`ディレクトリを作成し、そこにコードを配置する。  
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
+
+      # 欲しいもの
+      - Runner用のNamespace
+        - 名前は`arc-runners`
+      - Runner用のServiceAccount
+        - 名前は`arc-runner`
+        - Namespaceは`arc-runners`
+      - Runner用のRole
+        - 名前は`arc-runner`
+        - Namespaceは`arc-runners`
+        - 以下の権限を持つ
+          - `apps` APIグループの`deployments`リソースに対して`create`, `get`, `delete`の権限
+          - `""` APIグループの`pods`リソースに対して`get`, `list`の権限
+          - `""` APIグループの`pods/exec`リソースに対して`create`の権限
+      - Runner用のRoleBinding
+        - 名前は`arc-runner`
+        - Namespaceは`arc-runners`
+        - `arc-runner` ServiceAccount に対して `arc-runner` Role をバインドする
   - title: GitHub Actions Runnerをセットアップする
     body: |
       CIを実行するためのGitHub Actions Runnerをセットアップする。  
-      コードは`codes`ディレクトリ配下に`actions/k8s`ディレクトリを作成し、そこにコードを配置する。  
+      コードは`codes/actions/k8s`ディレクトリに配置する。  
       コードを作成し、リソースのデプロイが完了したらPRを出す。
 
       # 構成説明
@@ -39,6 +62,9 @@ issues:
       ランナーを作る方法はいくつかあるが、ここでは [GitHub Actions Runner Controller](https://github.com/actions/actions-runner-controller)(ARC) を使用する。  
       ARCはK8sにインストールするオペレーター（特定のアプリケーションやサービスの運用を自動化する仕組み）の一つ。  
       ARCを使用することで、K8sのPodとしてGitHub Actions Runnerを実行できるようになる。
+
+      # 前提
+      - Runner用のServiceAccount、Role、RoleBindingsを作成する
 
       # 欲しいもの
       - ARC
@@ -56,6 +82,7 @@ issues:
       - RunnerScaleSet
         - helmを使いインストール
           - インストール方法は[Actions Runner Controller のクイックスタート](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller/quickstart-for-actions-runner-controller#configuring-a-runner-scale-set)を参考にする
+          - Namespaceは`arc-runners`を指定
         - `helm install`のコマンド全文を`actions/k8s`ディレクトリ配下の`README.md`に書いて保存すること
         - valueファイルを作成し`helm install`コマンドの引数に指定する
           - ファイル名は`arc-runner-set-value.yaml`など任意
@@ -79,30 +106,6 @@ issues:
       helmの使い方は次を参考にすること。
       - [Helmの使い方](https://helm.sh/ja/docs/intro/using_helm/)
       - [Helmの使い方を3分で理解する](https://qiita.com/MahoTakara/items/3c509235cc18bd407f07)
-  - title: Runner用のServiceAccount、Role、RoleBindingsを作成する
-    body: |
-      Runner Pod が K8s 内部のリソースを操作出来るように関連リソースを作成する。  
-      コードは`codes/actions/k8s`ディレクトリに配置する。  
-      コードを作成し、リソースのデプロイが完了したらPRを出す。
-
-      # 前提
-      - GitHub Actions Runnerのセットアップが完了していること
-
-      # 欲しいもの
-      - Runner用のServiceAccount
-        - 名前は`arc-runner`
-        - Namespaceは`arc-runners`
-      - Runner用のRole
-        - 名前は`arc-runner`
-        - Namespaceは`arc-runners`
-        - 以下の権限を持つ
-          - `apps` APIグループの`deployments`リソースに対して`create`, `get`, `delete`の権限
-          - `""` APIグループの`pods`リソースに対して`get`, `list`の権限
-          - `""` APIグループの`pods/exec`リソースに対して`create`の権限
-      - Runner用のRoleBinding
-        - 名前は`arc-runner`
-        - Namespaceは`arc-runners`
-        - `arc-runner` ServiceAccount に対して `arc-runner` Role をバインドする
   - title: GitHub Actions の動作確認をする
     body: |
       セットアップしたセルフホストランナーでワークフローが実行できることを確認する。
