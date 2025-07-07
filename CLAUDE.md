@@ -121,3 +121,5 @@ Modify practice guides in `/docs/` directory, maintaining the structured learnin
 - **ALB Controller** actually deploys **NLB** - this has been corrected in documentation
 - Repository uses **issue-driven development** for practice exercises
 - Students work in `/codes/` directory; `/example/` contains reference answers (do not modify)
+- **AWS Documentation**: For AWS-related questions and documentation lookup, use the MCP server: `aws-docs` for accurate and up-to-date information
+- **Terraform Documentation**: For Terraform-related questions and documentation lookup, use the MCP server: `terraform` for accurate provider and module information
