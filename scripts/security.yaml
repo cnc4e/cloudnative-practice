@@ -168,3 +168,48 @@ issues:
       - EKSクラスタの監査ログをS3バケットに出力する
         - CloudWatch LogsからS3バケットへのエクスポートを設定する
       - S3の監査ログの分析をAthenaで行う
+
+  - title: Kubernetes NetworkPolicyによるネットワークセキュリティ
+    body: |
+      Kubernetes NetworkPolicyは、Pod間の通信を制御するセキュリティ機能です。デフォルトでは、すべてのPod間通信が許可されているため、NetworkPolicyを使用してネットワークレベルでのセグメンテーションを実装することで、セキュリティを大幅に向上させることができます。
+
+      [ネットワークポリシー](https://kubernetes.io/ja/docs/concepts/services-networking/network-policies/)
+
+      ## NetworkPolicyの概要
+
+      ### デフォルトの動作
+      - Kubernetesクラスタでは、すべてのPod間通信がデフォルトで許可
+      - 異なるNamespace間でも自由に通信可能
+      - セキュリティリスクが高い状態
+
+      ### NetworkPolicyによる制御
+      - Pod間の通信を明示的に制御
+      - 送信（Egress）と受信（Ingress）トラフィックの制御
+      - ラベルセレクターによる柔軟な対象選択
+
+      ## NetworkPolicyの基本概念
+
+      ### ポリシータイプ
+      - **Ingress** - Podへの着信通信を制御
+      - **Egress** - Podからの発信通信を制御
+      - 両方を組み合わせて使用可能
+
+      ### セレクター
+      - **podSelector** - 対象となるPodを選択
+      - **namespaceSelector** - 対象となるNamespaceを選択
+      - **ipBlock** - CIDR範囲でのIP制御
+
+      ## EKSでのPodの通信制御
+
+      EKSでは従来より Security Groups for Pods を使用してPodの通信を制御することができました。[セキュリティグループを個別の Pod に割り当てる](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/auto-net-pol.html)
+
+      しかし、EKS Auto Modeではサポートされていません。[EKS 自動モードl での VPC ネットワーキングとロードバランシングの説明](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/auto-networking.html)
+
+      代わりに EKS Auto Mode では Networkpolicy がサポートされています。[EKS Auto Mode でネットワークポリシーを使用する](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/auto-net-pol.html)
+
+      # プラクティス
+      - ネットワークポリシーコントローラーを有効にするConfigMapを作成する
+        - コードは`eks/k8s`ディレクトリに格納
+      - NetworkPolicyを使用したセキュリティ制御の実装
+        - frontend はVPCのCIDRからのみアクセスを許可
+        - backend は frontend からのみアクセスを許可
