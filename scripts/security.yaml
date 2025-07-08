@@ -201,7 +201,7 @@ issues:
 
       ## EKSでのPodの通信制御
 
-      EKSでは従来より Security Groups for Pods を使用してPodの通信を制御することができました。[セキュリティグループを個別の Pod に割り当てる](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/auto-net-pol.html)
+      EKSでは従来より Security Groups for Pods を使用してPodの通信を制御することができました。[セキュリティグループを個別の Pod に割り当てる](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/security-groups-for-pods.html)
 
       しかし、EKS Auto Modeではサポートされていません。[EKS 自動モードl での VPC ネットワーキングとロードバランシングの説明](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/auto-networking.html)
 
@@ -213,3 +213,39 @@ issues:
       - NetworkPolicyを使用したセキュリティ制御の実装
         - frontend はVPCのCIDRからのみアクセスを許可
         - backend は frontend からのみアクセスを許可
+
+  - title: EKSのSecurity Groups for Podsによるセキュリティ制御
+    body: |
+      **本issueは内容を確認するだけでクローズしてください。**
+
+      Security Groups for Podsは、AWS EKSにおいてPodレベルでネットワークセキュリティを制御する機能です。
+
+      [セキュリティグループを個別の Pod に割り当てる](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/security-groups-for-pods.html)
+
+      ## Security Groups for Podsの概要
+
+      ### 従来の課題
+      - Kubernetesのデフォルトでは、すべてのPod間通信が許可
+      - ネットワークレベルでのセグメンテーションが困難
+      - 細かなアクセス制御ができない
+
+      ### Security Groups for Podsの利点
+      - AWS Security Groupsの機能をPodレベルで適用
+      - IPアドレス、ポート、プロトコルレベルでの制御
+      - AWS VPCネットワーキングとの統合
+      - 既存のAWSセキュリティ管理プロセスとの一貫性
+
+      ### 注意
+      - VPC CNIプラグインが必要
+      - サポートされるEC2インスタンスタイプに制限があります。（`t`ファミリーはサポートされません）
+      - EKS Auto Modeではサポートされていません
+
+      ## Security Groupsの適用方法
+
+      - VPC CNI(aws-node)に`ENABLE_POD_ENI=true`の環境変数を設定。[Amazon EKS Pod のセキュリティグループ用に Amazon VPC CNI Plugin for Kubernetes を設定する](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/security-groups-pods-deployment.html)
+      - Pod用にセキュリティグループを作成します。
+      - SecurityGroupPolicyリソースを作成し、Podに適用するセキュリティグループを指定します。
+        - SecurityGroupPolicyリソースとPodを同時に作成するとPod起動に失敗する可能性があります。その時はPodを再作成すれば起動できます。
+
+      # プラクティス
+      本プラクティスでは EKS Auto Mode のため、Security Groups for Podsは使用できません。
