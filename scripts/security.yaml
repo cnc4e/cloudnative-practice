@@ -249,3 +249,71 @@ issues:
 
       # プラクティス
       本プラクティスでは EKS Auto Mode のため、Security Groups for Podsは使用できません。
+
+  - title: Kubernetes RBACによるアクセス制御
+    body: |
+      Kubernetes RBAC（Role-Based Access Control）は、クラスタ内のK8sリソースへのアクセスを制御するセキュリティ機能です。ユーザーやサービスアカウントに対して、必要最小限の権限のみを付与することで、セキュリティリスクを最小化できます。
+
+      [Using RBAC Authorization](https://kubernetes.io/docs/reference/access-authn-authz/rbac/)
+
+      ## RBACの基本概念
+
+      ### 主要なリソース
+      - **Role** - Namespace内のリソースに対する権限を定義
+      - **ClusterRole** - クラスタ全体のリソースに対する権限を定義
+      - **RoleBinding** - RoleをユーザーやServiceAccountに紐付け
+      - **ClusterRoleBinding** - ClusterRoleをユーザーやServiceAccountに紐付け
+
+      ### APIGroups とリソースの指定
+      
+      RBACでは、対象となるKubernetesリソースをAPIGroupsとリソース名で指定します。主要なAPIGroupsは以下の通りです。
+
+      - **""** (core group) - Pod、Service、ConfigMap、Secret など
+      - **apps** - Deployment、DaemonSet、ReplicaSet など
+      - **networking.k8s.io** - NetworkPolicy、Ingress など
+      - **rbac.authorization.k8s.io** - Role、RoleBinding など
+      - **apiextensions.k8s.io** - CustomResourceDefinition など
+
+      利用可能なAPIGroupsとリソースは以下のコマンドで確認できます：
+      ```bash
+      # 全てのAPIリソースを表示
+      kubectl api-resources
+      ```
+
+      ### ロールで設定する権限(verbs)の種類
+
+      - **get** - リソースの取得
+      - **list** - リソースの一覧表示
+      - **create** - リソースの作成
+      - **update/patch** - リソースの更新
+      - **delete** - リソースの削除
+      - **watch** - リソースの変更監視
+
+      ## セキュリティのベストプラクティス
+
+      ### 最小権限の原則
+      - 必要な権限のみを付与
+      - ワイルドカード（`*`）の使用を避ける
+
+      ### ServiceAccountの管理
+      - 用途別のServiceAccount作成
+      - 不要なServiceAccountの削除
+
+      # プラクティス
+
+      時間による計画的な性能拡張を想定したCronJobを作成する。
+
+      - CronJobを作成する
+        - コードはcodes/frontend/k8sディレクトリに格納
+        - スケールアウト用のCronJob
+          - 時間は任意（スケールイン用の少なくとも2分前にする）
+          - イメージは`bitnami/kubectl:latest`を使う
+          - `kubectl patch deploy frontend -p '{"spec":{"replicas":3}}'`コマンドでフロントエンドのPod数を増やす
+          - 任意のServiceAccountを指定
+        - スケールイン用のCronJob
+          - 基本的にスケールアウト用と同じ。時間とスケール数を変える
+        - CronJob用のRBAC
+          - ServiceAccount
+          - Role
+            - apps.deploymentsを"get", "list", "patch"する権限を持つ
+          - RoleBinding
