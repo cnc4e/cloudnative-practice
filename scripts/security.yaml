@@ -354,3 +354,48 @@ issues:
       # プラクティス
       - frontendとbackendにReadOnlyRootFilesystemを設定する
         - frontendは`/var/cache/nginx`と`/run`に書き込みが必要
+
+  - title: 非rootユーザーでのPod実行によるセキュリティ強化
+    body: |
+      Podを非rootユーザーで実行することは、コンテナセキュリティの基本的なベストプラクティスです。rootユーザーでの実行は、セキュリティ侵害時の影響範囲を拡大させるリスクがあるため、必要最小限の権限で実行することが重要です。
+
+      [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
+
+      ## 非rootユーザー実行の概要
+
+      ### セキュリティ上の利点
+      - 権限昇格攻撃のリスクを軽減
+      - システムファイルへの不正アクセスを防止
+      - コンテナブレイクアウト時の影響範囲を制限
+      - 最小権限の原則に従った実行環境の実現
+
+      ### デフォルトの問題
+      - 多くのコンテナイメージはrootユーザー（UID 0）で実行される
+      - rootユーザーはシステム全体への強力な権限を持つ
+      - セキュリティ侵害時の被害が拡大しやすい
+
+      ## 実装方法
+
+      ### SecurityContextの設定
+      PodまたはContainerレベルでSecurityContextを設定：
+      - **runAsNonRoot** - 非rootユーザーでの実行を強制
+      - **runAsUser** - 実行するユーザーのUIDを指定
+      - **runAsGroup** - 実行するグループのGIDを指定
+      - **fsGroup** - ボリュームの所有グループを指定
+
+      ## 実装時の考慮点
+
+      - **ポート1024未満の使用** - 1024までは特権が必要なためアプリケーションを8080などの非特権ポートで実行
+      - **ファイル権限** - fsGroupを使用してボリュームの権限を調整
+      - **イメージの変更** - 非rootユーザーが無い場合はDockerfileでユーザーを作成・切り替え
+
+      # プラクティス
+      - frontendとbackendのPodを非root強制にし非rootで実行する
+        - frontend
+          - nginxイメージにはnginxユーザーおよびグループ(101:101)が既に存在します
+          - ポートを80から8080に変更する
+            - nginx.confをconfigmapにして/etc/nginx/nginx.confにマウント
+            - nginx.confに書かれたリッスンポートを80から8080に変更
+            - その他、k8sマニフェストもポート変更
+        - backend
+          - nodeイメージにはnodeユーザーおよびグループ(1000:1000)が既に存在します
