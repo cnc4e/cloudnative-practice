@@ -40,11 +40,18 @@ spec:
                   values:
                   - backend
               topologyKey: kubernetes.io/hostname
+      volumes:
+      - name: nginx-cache
+        emptyDir: {}
+      - name: nginx-run
+        emptyDir: {}
       containers:
       - name: nginx
         image: 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:v1
         ports:
         - containerPort: 80
+        securityContext:
+          readOnlyRootFilesystem: true
         resources:
           requests:
             cpu: "100m"
@@ -64,3 +71,8 @@ spec:
             port: 80
           initialDelaySeconds: 15
           periodSeconds: 20
+        volumeMounts:
+        - name: nginx-cache
+          mountPath: /var/cache/nginx
+        - name: nginx-run
+          mountPath: /run

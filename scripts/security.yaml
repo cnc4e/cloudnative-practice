@@ -317,3 +317,40 @@ issues:
           - Role
             - apps.deploymentsを"get", "list", "patch"する権限を持つ
           - RoleBinding
+
+  - title: ReadOnlyRootFilesystemによるセキュリティ強化
+    body: |
+      ReadOnlyRootFilesystem設定は、コンテナのルートファイルシステムを読み取り専用にするセキュリティ機能です。この設定により、悪意のあるコードによるファイルシステムの改ざんやマルウェアの永続化を防止できます。
+
+      [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
+
+      ## ReadOnlyRootFilesystemの概要
+
+      ### セキュリティ上の利点
+      - ファイルシステムへの不正な書き込みを防止
+      - マルウェアの永続化を阻止
+      - 実行時のファイル改ざんを防止
+      - アプリケーションの不正な設定変更を阻止
+
+      ### 動作原理
+      - コンテナのルートファイルシステム（/）を読み取り専用でマウント
+      - /tmp、/var/tmp などの一時ディレクトリも読み取り専用になる
+      - 書き込みが必要な場合は、別途ボリュームをマウントする必要がある
+
+      ## 実装時の考慮点
+
+      ### 一時ファイルの処理
+      多くのアプリケーションは一時ファイルを作成する必要があります：
+      - `/tmp` ディレクトリへの書き込み
+      - ログファイルの出力
+      - 設定ファイルの動的生成
+
+      ### 解決策
+      書き込みが必要な場合は、以下のボリュームタイプを使用：
+      - **emptyDir** - Pod内で共有する一時領域
+      - **tmpfs** - メモリベースの一時ファイルシステム
+      - **PersistentVolume** - 永続化が必要なデータ
+
+      # プラクティス
+      - frontendとbackendにReadOnlyRootFilesystemを設定する
+        - frontendは`/var/cache/nginx`と`/run`に書き込みが必要
