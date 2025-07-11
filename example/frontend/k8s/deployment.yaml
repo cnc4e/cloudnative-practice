@@ -45,6 +45,9 @@ spec:
         emptyDir: {}
       - name: nginx-run
         emptyDir: {}
+      - name: nginx-config
+        configMap:
+          name: frontend-nginx-config
       containers:
       - name: nginx
         image: 456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:v1
@@ -52,6 +55,9 @@ spec:
         - containerPort: 80
         securityContext:
           readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 101
+          runAsGroup: 101
         resources:
           requests:
             cpu: "100m"
@@ -62,13 +68,13 @@ spec:
         readinessProbe:
           httpGet:
             path: /
-            port: 80
+            port: 8080
           initialDelaySeconds: 5
           periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /
-            port: 80
+            port: 8080
           initialDelaySeconds: 15
           periodSeconds: 20
         volumeMounts:
@@ -76,3 +82,6 @@ spec:
           mountPath: /var/cache/nginx
         - name: nginx-run
           mountPath: /run
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf

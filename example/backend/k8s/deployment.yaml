@@ -69,3 +69,6 @@ spec:
           periodSeconds: 20
         securityContext:
           readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
