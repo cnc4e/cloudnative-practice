@@ -393,9 +393,129 @@ issues:
       - frontendとbackendのPodを非root強制にし非rootで実行する
         - frontend
           - nginxイメージにはnginxユーザーおよびグループ(101:101)が既に存在します
-          - ポートを80から8080に変更する
+          - Podの待ち受けポートを80から8080に変更する
             - nginx.confをconfigmapにして/etc/nginx/nginx.confにマウント
             - nginx.confに書かれたリッスンポートを80から8080に変更
-            - その他、k8sマニフェストもポート変更
+            - その他、k8sマニフェストもポート変更（Serviceの公開ポートは80のままで良い）
         - backend
           - nodeイメージにはnodeユーザーおよびグループ(1000:1000)が既に存在します
+
+  - title: allowPrivilegeEscalationによる特権昇格の防止
+    body: |
+      allowPrivilegeEscalation設定は、コンテナ内プロセスが実行時に親プロセスより多くの特権を取得することを防ぐセキュリティ機能です。この設定により、setuidバイナリやsudoコマンドによる特権昇格攻撃を防止できます。
+
+      [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
+
+      ## 特権昇格の概要
+
+      ### 特権昇格の仕組み
+      - プロセスが実行時により多くの権限を取得する仕組み
+      - setuidビット付きバイナリの実行時に権限が昇格
+      - sudoコマンドによる一時的な権限昇格
+      - 攻撃者が悪用する可能性のあるメカニズム
+
+      ### セキュリティリスク
+      - コンテナブレイクアウトのリスク増大
+      - システム権限の不正取得
+      - ホストシステムへの影響拡大
+      - マルウェアによる権限昇格攻撃
+
+      ## allowPrivilegeEscalationの動作
+
+      ### false設定時の効果
+      - setuidバイナリが特権を取得できない
+      - sudoコマンドが実行されても権限が昇格しない
+      - プロセスは起動時の権限レベルを維持
+      - 特権昇格攻撃を根本的に防止
+
+      ### デフォルト動作
+      - allowPrivilegeEscalationのデフォルト値はtrue
+      - runAsNonRoot: trueが設定されている場合は自動的にfalseになる
+      - 明示的にfalseを設定することが推奨
+
+      # プラクティス
+      - frontendとbackendのSecurityContextに特権昇格防止の設定を追加する
+
+  - title: 特権のはく奪（Capability Drop）によるセキュリティ強化
+    body: |
+      Linux Capabilitiesは、従来のroot権限を細分化し、プロセスに必要最小限の権限のみを付与する仕組みです。コンテナ実行時に不要な特権を削除（drop）することで、セキュリティリスクを大幅に軽減できます。
+
+      [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
+
+      ## Linux Capabilitiesの概要
+
+      ### 従来のroot権限の問題
+      - root権限は「全てか無か」の権限モデル
+      - 必要以上に強力な権限を付与してしまう
+      - セキュリティ侵害時の影響が甚大
+      - 最小権限の原則に反する
+
+      ### Capabilitiesによる権限の細分化
+      - root権限を個別の機能単位に分割
+      - プロセスに必要な権限のみを付与
+      - 不要な権限は削除（drop）して攻撃面を縮小
+      - より細かなセキュリティ制御が可能
+
+      ## 主要なLinux Capabilities
+
+      ### ネットワーク関連
+      - **CAP_NET_BIND_SERVICE** - 1024未満のポートでのバインド
+      - **CAP_NET_RAW** - RAWソケットの作成
+      - **CAP_NET_ADMIN** - ネットワーク設定の変更
+
+      ### ファイルシステム関連
+      - **CAP_DAC_OVERRIDE** - ファイル権限の無視
+      - **CAP_FOWNER** - ファイル所有者権限の無視
+      - **CAP_CHOWN** - ファイル所有者の変更
+
+      ### システム管理関連
+      - **CAP_SYS_ADMIN** - システム管理操作（非常に強力）
+      - **CAP_SYS_TIME** - システム時刻の変更
+      - **CAP_KILL** - 他プロセスへのシグナル送信
+
+      ## コンテナのデフォルトCapabilities
+
+      ### Dockerのデフォルト設定
+      コンテナには以下のCapabilitiesがデフォルトで付与されます：
+      - CAP_AUDIT_WRITE
+      - CAP_CHOWN
+      - CAP_DAC_OVERRIDE
+      - CAP_FOWNER
+      - CAP_FSETID
+      - CAP_KILL
+      - CAP_MKNOD
+      - CAP_NET_BIND_SERVICE
+      - CAP_NET_RAW
+      - CAP_SETFCAP
+      - CAP_SETGID
+      - CAP_SETPCAP
+      - CAP_SETUID
+      - CAP_SYS_CHROOT
+
+      ### セキュリティリスク
+      多くのWebアプリケーションにとって、これらの権限は過剰であり、セキュリティリスクとなります。
+
+      ## 特権のはく奪戦略
+
+      ### ALL権限の削除
+      最も安全なアプローチは、すべての特権を削除することです：
+      ```yaml
+      securityContext:
+        capabilities:
+          drop:
+            - ALL
+      ```
+
+      ### 必要に応じた権限の追加
+      削除後、アプリケーションに必要な最小限の権限のみを追加：
+      ```yaml
+      securityContext:
+        capabilities:
+          drop:
+            - ALL
+          add:
+            - NET_BIND_SERVICE  # 必要な場合のみ
+      ```
+
+      # プラクティス
+      - frontendとbackendのSecurityContextで特権をすべてはく奪する
