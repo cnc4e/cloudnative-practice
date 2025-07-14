@@ -473,27 +473,26 @@ issues:
       - **CAP_SYS_TIME** - システム時刻の変更
       - **CAP_KILL** - 他プロセスへのシグナル送信
 
-      ## コンテナのデフォルトCapabilities
+      ## containerdのデフォルトCapabilities
 
-      ### Dockerのデフォルト設定
-      コンテナには以下のCapabilitiesがデフォルトで付与されます：
-      - CAP_AUDIT_WRITE
+      EKS AutoMode では、containerd を使用してコンテナを実行します。containerd のデフォルトCapabilitiesは以下の通りです。
+
       - CAP_CHOWN
       - CAP_DAC_OVERRIDE
-      - CAP_FOWNER
       - CAP_FSETID
-      - CAP_KILL
+      - CAP_FOWNER
       - CAP_MKNOD
-      - CAP_NET_BIND_SERVICE
       - CAP_NET_RAW
-      - CAP_SETFCAP
       - CAP_SETGID
-      - CAP_SETPCAP
       - CAP_SETUID
+      - CAP_SETFCAP
+      - CAP_SETPCAP
+      - CAP_NET_BIND_SERVICE
       - CAP_SYS_CHROOT
+      - CAP_KILL
+      - CAP_AUDIT_WRITE
 
-      ### セキュリティリスク
-      多くのWebアプリケーションにとって、これらの権限は過剰であり、セキュリティリスクとなります。
+      [containerd/pkg/oci/spec.go · containerd/containerd](https://github.com/containerd/containerd/blob/1117f663e77d662b02cec530a03310ed91b1d18b/pkg/oci/spec.go#L118)
 
       ## 特権のはく奪戦略
 
@@ -519,3 +518,50 @@ issues:
 
       # プラクティス
       - frontendとbackendのSecurityContextで特権をすべてはく奪する
+
+  - title: Falcoによるランタイムセキュリティ監視
+    body: |
+      Falco は、CNCF（Cloud Native Computing Foundation）にホストされているOSSで、コンテナやKubernetesクラスタの異常な挙動をリアルタイムに検知するためのランタイムセキュリティエンジンです。
+
+      [Falco公式ドキュメント](https://falco.org/docs/)
+
+      ## Falcoの必要性
+
+      - Kubernetesのデフォルト設定では多くの通信が許可されている
+      - 静的なセキュリティ設定だけでは実行時の脅威を検出できない
+      - コンテナブレイクアウトや特権昇格などの動的な攻撃への対応が必要
+
+      ## Falcoで検出できる脅威
+
+      Falcoは以下のようなセキュリティ脅威を検出できます。
+
+      - **ファイルシステム攻撃**: システムファイルの不正な読み書き、設定ファイル改ざん
+      - **プロセス異常**: 予期しないバイナリ実行、シェルスクリプトの異常実行
+
+      他にもさまざまな脅威を検出可能です。Falcoがデフォルトで監視するルールは以下のリンクから確認できます。
+
+      [Default Rules | Falco](https://falco.org/docs/reference/rules/default-rules/)
+
+      ## FalcoのKubernetes統合
+
+      ### DaemonSet配置
+      - 各ノードでカーネルイベントを監視するためDaemonSetとして配置
+      - 全てのワーカーノードでのセキュリティ監視を実現
+      - ノードレベルでのシステムコール監視
+
+      ### 権限要件
+      - カーネルアクセスのため**特権モード**での実行が必要
+      - セキュリティコンテキストでの適切な権限設定
+      - ホストのプロセスファイルシステムへのアクセス
+
+      # プラクティス
+      - FalcoをEKSクラスタに導入する
+        - Helmチャートを使用してFalcoをインストール [Falcoをデプロイする | KubernetesでFalcoを試す](https://falco.org/docs/getting-started/falco-kubernetes-quickstart/#deploy-falco)
+      - 動作確認のためbackendまたはfrontendでルールをトリガーする。Falcoのログに疑わしい挙動が出力されることを確認する [ルールをトリガーする | KubernetesでFalcoを試す](https://falco.org/docs/getting-started/falco-kubernetes-quickstart/#trigger-a-rule)
+
+      # 発展的なプラクティス
+      このプラクティスは余裕がなければやらなくてもいいです。
+
+      - カスタムルールの作成
+        - アプリケーション固有のセキュリティルール作成
+        - ルールの優先度とノイズ対策の設定
