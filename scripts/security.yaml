@@ -557,7 +557,7 @@ issues:
       # プラクティス
       - FalcoをEKSクラスタに導入する
         - Helmチャートを使用してFalcoをインストール [Falcoをデプロイする | KubernetesでFalcoを試す](https://falco.org/docs/getting-started/falco-kubernetes-quickstart/#deploy-falco)
-      - backendまたはfrontendでルールをトリガーする [ルールをトリガーする | KubernetesでFalcoを試す](https://falco.org/docs/getting-started/falco-kubernetes-quickstart/#trigger-a-rule)
+      - 動作確認のためbackendまたはfrontendでルールをトリガーする。Falcoのログに疑わしい挙動が出力されることを確認する [ルールをトリガーする | KubernetesでFalcoを試す](https://falco.org/docs/getting-started/falco-kubernetes-quickstart/#trigger-a-rule)
 
       # 発展的なプラクティス
       このプラクティスは余裕がなければやらなくてもいいです。
