@@ -569,3 +569,40 @@ issues:
       - カスタムルールの作成
         - アプリケーション固有のセキュリティルール作成
         - ルールの優先度とノイズ対策の設定
+
+  - title: SELinuxによるファイルアクセスの制限
+    body: |
+      **本issueは内容を確認するだけでクローズしてください。**
+
+      SELinux（Security-Enhanced Linux）は、Linuxカーネルのセキュリティモジュールです。ユーザーやプロセスがアクセスできるファイルを制御できます。
+
+      ## SELinuxの概要
+
+      従来のアクセス制御（DAC）ではファイルやディレクトリに設定したパーミッションに基づく制限でした。しかし、rootユーザーは全てのリソースにアクセスできるため、セキュリティ上のリスクが高いです。
+
+      SELinuxは強制アクセス制御（MAC）を提供し、ポリシーで明示的に許可されたアクセスのみを許可することで、システム全体のセキュリティを強化します。プロセスやファイルにはセキュリティコンテキストが付与され、アクセスはそのポリシーに基づいて制御されます。rootユーザーもこのポリシーに従う必要があります。
+
+      ## SELinuxの動作モード
+
+      ### Enforcing（強制モード）
+      - SELinuxポリシーを強制的に適用
+      - ポリシー違反をブロックし、ログに記録
+      - 本番環境で推奨されるモード
+
+      ### Permissive（許可モード）
+      - ポリシー違反をログに記録するが、ブロックしない
+      - ポリシーのテストや調整に使用
+      - 移行期間やトラブルシューティングに適している
+
+      ### Disabled（無効モード）
+      - SELinuxが完全に無効
+      - 従来のDACのみが適用される
+
+      ## Kubernetesクラスタでの活用
+
+      - ワーカーノード
+        - EKS Automode のワーカーノードはデフォルトでSELinuxがEnforcingモードで有効 [EKS Auto Mode を使用してクラスターインフラストラクチャを自動化する - Amazon EKS](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/automode.html)
+      - Pod
+        - ノードでSELinuxが有効な場合、PodのSecurityContextでSELinuxオプションを設定可能
+          - オプション指定しなくてもコンテナランタイムにより一意なコンテキストが割り振られ、コンテナ内のファイルのみアクセスできるように制限される [Kubernetes API Reference Docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#securitycontext-v1-core)
+          - EKS Automode (Bottleroket)ではすべての非特権Podに`container_t`タイプのラベルが自動的に付与されコンテナ実行ユーザーがrootでもアクションが制限される[Bottlerocket のセキュリティ機能 〜オープンソースの Linux ベースオペレーティングシステム〜 | Amazon Web Services ブログ](https://aws.amazon.com/jp/blogs/news/security-features-of-bottlerocket-an-open-source-linux-based-operating-system/)
