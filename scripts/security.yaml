@@ -544,6 +544,10 @@ issues:
 
       ## FalcoのKubernetes統合
 
+      ### Falcoの動作
+      - ノードのシステムコールをドライバーを使って監視
+        - EKS Automode のノードの場合は`Modern eBPF`を使用
+
       ### DaemonSet配置
       - 各ノードでカーネルイベントを監視するためDaemonSetとして配置
       - 全てのワーカーノードでのセキュリティ監視を実現
