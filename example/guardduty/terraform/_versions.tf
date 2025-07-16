@@ -9,10 +9,10 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "cn-practice-tf-state"
-    key            = "guardduty/terraform.tfstate"
+    bucket         = "cn-practice-tfstate"
+    key            = "guardduty.tfstate"
     region         = "ap-northeast-2"
-    dynamodb_table = "cn-practice-tf-state-lock"
+    dynamodb_table = "cn-practice-tfstate"
     encrypt        = true
   }
 }
