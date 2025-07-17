@@ -671,3 +671,31 @@ issues:
           curl http://169.254.169.254.sslip.io/latest/meta-data/
           ```
         - しばらく(2分位)するとRuntime Monitoringで`UnauthorizedAccess:Runtime/MetadataDNSRebind`が検出される。また、それを契機にMalware protection for EC2がEBSをスキャンする。
+
+  - title: 信頼できる提供元のコンテナイメージの使用
+    body: |
+      **本issueは内容を確認するだけでクローズしてください。**
+
+      クラスタで動かすコンテナイメージは、信頼できる提供元から取得することが重要です。悪意のあるイメージや脆弱なイメージを使用すると、セキュリティリスクが高まります。
+
+      ## コンテナイメージのセキュリティリスク
+
+      - 攻撃者が悪意のあるコンテナイメージをクラスタで実行する
+      - 開発目的等で意図せず脆弱なイメージを使用してしまう
+
+      ## 信頼できるイメージ提供元
+
+      ### 公式イメージの使用
+      - **Docker Hub公式イメージ** - Dockerが維持管理する認証済みイメージ
+      - **ディストリビューション公式** - Ubuntu、Alpine、CentOS等の公式イメージ
+      - **ソフトウェアベンダー公式** - nginx、node、redis等の公式イメージ
+
+      ### 検証済みレジストリ
+      - **AWS ECR Public Gallery** - AWSが管理する公開レジストリ
+      - **Google Container Registry** - Googleが提供するイメージ
+      - **Red Hat Container Catalog** - Red Hatの認証済みイメージ
+      - 自身で管理しているプライベートなレジストリ
+
+      ## 対策
+
+      - kyverno等のポリシーエンジンをK8sに導入し、信頼できるレジストリからのイメージのみ実行を許可する (kyvernoの導入は別のissueで行います)
