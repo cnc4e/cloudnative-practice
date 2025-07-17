@@ -31,3 +31,9 @@ settings:
       color: c0fed0
       description: インフラや設定の管理
     issue_yaml: availability.yaml
+  - name: security
+    label:
+      name: セキュリティ
+      color: ff6b6b
+      description: セキュリティ機能の設定
+    issue_yaml: security.yaml
