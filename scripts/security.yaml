@@ -606,3 +606,68 @@ issues:
         - ノードでSELinuxが有効な場合、PodのSecurityContextでSELinuxオプションを設定可能
           - オプション指定しなくてもコンテナランタイムにより一意なコンテキストが割り振られ、コンテナ内のファイルのみアクセスできるように制限される [Kubernetes API Reference Docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#securitycontext-v1-core)
           - EKS Automode (Bottleroket)ではすべての非特権Podに`container_t`タイプのラベルが自動的に付与されコンテナ実行ユーザーがrootでもアクションが制限される[Bottlerocket のセキュリティ機能 〜オープンソースの Linux ベースオペレーティングシステム〜 | Amazon Web Services ブログ](https://aws.amazon.com/jp/blogs/news/security-features-of-bottlerocket-an-open-source-linux-based-operating-system/)
+
+  - title: GuardDuty EKS Protectionの有効化とセキュリティ監視
+    body: |
+      Amazon GuardDutyは、AWSアカウントおよびワークロードを脅威から保護するためのマネージド型脅威検出サービスです。EKSの脅威も検出可能です。
+
+      [Amazon GuardDuty](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/what-is-guardduty.html)
+
+      ## EKS に関連したGuardDutyの機能
+
+      - [EKS Protection](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/kubernetes-protection.html)
+      - [Runtime Monitoring](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/runtime-monitoring.html)
+      - [Malware Protection for EC2](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/malware-protection.html)
+
+      ### EKS Protection
+
+      EKSクラスタの脅威を検出するための機能です。EKSの監査ログを使い、不正な操作を検出します。
+
+      EKS Protection はアカウント単位で機能を有効または無効にします。
+
+      以下の脅威を検出します。
+
+      [EKS Protection の検出結果タイプ](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/guardduty-finding-types-eks-audit-logs.html)
+
+      ### Runtime Monitoring
+
+      EKSクラスタ上で実行されるコンテナのランタイム挙動を監視し、リアルタイムで脅威を検出します。EC2ベースのワーカーノードでのみ利用可能です。
+
+      Runtime Monitoring はアカウント単位で機能を有効または無効にします。
+
+      さらに、EKSに GuardDuty セキュリティエージェント をデプロイすることで監視できます。導入方法は自動または手動が選べます。
+
+      - 自動: GuardDutyがEKSにエージェントをデプロイします。デフォルトではすべてのEKSクラスタに対して自動的に有効になります。任意のクラスタを選択または除外できます。VPCエンドポイントが自動で作成されます。[Amazon EKS リソースのセキュリティエージェントの自動管理](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/managing-gdu-agent-eks-automatically.html)
+      - 手動: EKSクラスタにエージェントを手動でデプロイします。EKSアドオンで導入可能です。必要なVPCエンドポイントも手動で作成します。[Amazon EKS クラスターのセキュリティエージェントの手動管理](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/managing-gdu-agent-eks-manually.html)
+
+      以下の脅威を検出します。
+
+      [GuardDuty Runtime Monitoring の検出結果タイプ](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/findings-runtime-monitoring.html)
+
+      ### Malware Protection for EC2
+
+      EC2インスタン上のアプリケーション、コンテナで疑わしい動作を検出した際にEBSボリュームをスキャンし、マルウェアの検出を行います。EKSクラスタ上のEC2インスタンスで実行されるPodも対象です。
+
+      スキャンは以下の脅威を検出した際に自動で行われます。また、オンデマンドで手動でスキャンも可能です。
+
+      [GuardDuty 実行型マルウェアスキャンを起動する検出結果](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/gd-findings-initiate-malware-protection-scan.html)
+
+      以下の脅威を検出します。
+
+      [Malware Protection for EC2 の検出結果のタイプ](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/findings-malware-protection.html)
+
+      # プラクティス
+      - GuardDutyを有効化し、EKSを保護する
+        - Terraformのguarddutyモジュールを作成する
+        - アカウントでGuardDutyを有効化する（すでにアカウントで有効になっている場合はコード実装不要）
+        - EKS Protectionを有効化（すでにアカウントで有効になっている場合はコード実装不要）
+        - Runtime Monitoringを有効化（すでにアカウントで有効になっている場合はコード実装不要）
+          - GuardDutyセキュリティエージェントをEKSクラスタに**手動**でデプロイする
+          - VPCエンドポイントを作成する
+        - Malware Protection for EC2を有効化（すでにアカウントで有効になっている場合はコード実装不要）
+      - 以下で動作確認可能
+        - EKSクラスタ内のcurlコマンドが実行できる任意のPod(frontend等)で以下を実行
+          ``` bash
+          curl http://169.254.169.254.sslip.io/latest/meta-data/
+          ```
+        - しばらく(2分位)するとRuntime Monitoringで`UnauthorizedAccess:Runtime/MetadataDNSRebind`が検出される。また、それを契機にMalware protection for EC2がEBSをスキャンする。
