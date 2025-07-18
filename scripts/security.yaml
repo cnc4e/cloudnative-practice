@@ -749,3 +749,41 @@ issues:
       - ECRレポジトリに基本イメージスキャンを設定する
         - ECRモジュールを拡張し、プッシュ時に基本スキャン（Basic Scan）を実行
         - backendまたはfrontendのイメージをビルドしてECRにプッシュ。プッシュ時にスキャンが実行されることを確認する
+
+  - title: マルチステージビルドによるイメージサイズとセキュリティの最適化
+    body: |
+      **本issueは内容を確認するだけでクローズしてください。**
+
+      マルチステージビルドは、最終的なコンテナイメージからビルド時のみ必要なツールやファイルを除外することで、イメージサイズの縮小とセキュリティリスクの軽減を実現するDockerの機能です。
+
+      [Use multi-stage builds](https://docs.docker.com/build/building/multi-stage/)
+
+      ## マルチステージビルドの概要
+
+      ### マルチステージビルドの利点
+      - **イメージサイズの削減** - 必要なファイルのみを最終イメージに含める
+      - **セキュリティリスクの軽減** - ビルドツールや開発用パッケージを除外
+      - **実行環境の最適化** - 軽量なベースイメージでランタイム環境を構築
+      - **ビルドキャッシュの効率化** - ステージごとのレイヤーキャッシュを利用
+
+      ## マルチステージビルドの基本構造
+
+      実はfrontendのDockerfileはすでにマルチステージビルドを使用しています。以下のように、ビルドステージとランタイムステージを分けています。
+
+      **ビルドステージ（Build Stage）**
+      ```dockerfile
+      FROM node:18 as build
+      WORKDIR /app
+      COPY package*.json ./
+      RUN npm install
+      COPY . .
+      RUN npm run build
+      ```
+
+      **ランタイムステージ（Runtime Stage）**
+      ```dockerfile
+      FROM nginx:alpine
+      COPY --from=build /app/build /usr/share/nginx/html
+      ```
+
+      ビルドステージでビルドした成果物が`/app/build`に格納され、ランタイムステージで`/usr/share/nginx/html`配下にコピーしています。これにより、最終イメージにはビルドツールやソースコードが含まれず、軽量なイメージが生成されます。
