@@ -3,6 +3,10 @@ kind: Application
 metadata:
   name: frontend
   namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: frontend=456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/frontend
+    argocd-image-updater.argoproj.io/frontend.update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-method: git
 spec:
   destination:
     namespace: default
