@@ -813,3 +813,59 @@ issues:
           - CI/CD用のIAMロールにプッシュ権限を付与
           - EKSワーカーノードのIAMロールにプル権限のみ付与
           - 他のAWSアカウントからのアクセスを拒否
+
+  - title: SOPSを使ったK8s Secretの暗号化
+    body: |
+      SOPS（Secrets OPerationS）は、機密情報を暗号化してGitリポジトリに安全に保存するためのツールです。KubernetesのSecretリソースを暗号化して管理することで、設定ファイルの機密性を保ちながらInfrastructure as Codeの運用を実現できます。
+
+      [mozilla/sops: Simple and flexible tool for managing secrets](https://github.com/mozilla/sops)
+
+      ## K8s Secret管理の課題
+      - Secretをプレーンテキストで保存するセキュリティリスク
+      - 設定の共有とバージョン管理の困難さ
+      - GitリポジトリにSecretをコミットできない問題
+
+      ## 課題の解決策
+      - External Secret: AWS Secrets Managerなどの外部ストアにある機密情報を、クラスター内のネイティブなKubernetes Secretリソースへと同期し続けるオペレーター
+      - Shield Secret: 公開鍵を使って誰でも安全に暗号化できるSealedSecretリソースをGitに保存し、クラスター内のコントローラーだけが持つ秘密鍵で復号するツール
+      - vals: 設定ファイル内にref://形式で記述された機密情報の参照を、デプロイ実行時にVaultやAWSなど多様なバックエンドから取得して解決（置換）するCLIツール
+      - SOPS: YAMLやJSONファイル内の機密情報（バリュー）をKMSやPGPキーで直接暗号化し、ファイル全体を安全にGit管理するためのCLIツール
+
+      ## SOPSの概要
+      - **SOPS**はYAML/JSONファイルの値を暗号化するCLIツール
+      - **KMSやPGPキー**を使用して暗号化
+      - YAML/JSONの値のみを暗号化し、構造は可読性を保持
+      - **暗号化されたファイルをGitで管理** - 機密情報を安全にバージョン管理
+
+      ## SOPSによる暗号化手順
+      - (事前準備) KMS等の暗号化キーを用意
+      - SOPSコマンドを使用してSecretマニフェストを暗号化
+      - 暗号化されたファイルをGitリポジトリにコミット
+      - デプロイ時にSOPSコマンドで復号化してKubernetesに適用
+
+      ## SOPSのKubernetes統合
+      - CLIツールで毎回手動で暗号化・復号化するのは面倒
+      - KustomizeやHelmと組み合わせて使用可能
+        - Kustomize: [ksops](https://github.com/viaduct-ai/kustomize-sops)
+        - Helm: [helm-secrets](https://github.com/jkroepke/helm-secrets)
+      - ArgoCDにもksopsを統合することが可能だが拡張が必要
+        - [Argo CD Integration](https://github.com/viaduct-ai/kustomize-sops?tab=readme-ov-file#argo-cd-integration-)
+
+      # プラクティス
+      - SOPS用のKMSキーを作成（別issue、SOPSを使ったTerraformの暗号化で作成済なら不要）
+        - KMSのTerraformコードは`codes/sops/terraform`に配置
+      - SOPSを使用したSecret暗号化の実装
+        - 適当なKey/ValueをもったSecretのマニフェストを作成
+        - SOPSを使用してSecretマニフェストを暗号化（デプロイはしなくていいです）
+  - title: SOPSを使ったTerraformの暗号化
+    body: |
+      SOPSを使用してTerraformの設定ファイルを暗号化することも可能です。これにより、機密情報を安全に管理しつつ、Infrastructure as Codeを実現できます。
+
+      [mozilla/sops: Simple and flexible tool for managing secrets](https://github.com/mozilla/sops)
+
+      ## TerraformでのSOPSの使用例
+      1. SOPS用のKMSキーを作成
+      2. Terraformの設定ファイルを作成
+      3. SOPSを使用してTerraformの設定ファイルを暗号化
+      4. 暗号化されたファイルをGitリポジトリにコミット
+      5. デプロイ時にSOPSコマンドで復号化してTerraformに適用
