@@ -840,7 +840,6 @@ issues:
       ## SOPSによる暗号化手順
       - (事前準備) KMS等の暗号化キーを用意
       - SOPSコマンドを使用してSecretマニフェストを暗号化
-      - 暗号化されたファイルをGitリポジトリにコミット
       - デプロイ時にSOPSコマンドで復号化してKubernetesに適用
 
       ## SOPSのKubernetes統合
@@ -852,20 +851,55 @@ issues:
         - [Argo CD Integration](https://github.com/viaduct-ai/kustomize-sops?tab=readme-ov-file#argo-cd-integration-)
 
       # プラクティス
-      - SOPS用のKMSキーを作成（別issue、SOPSを使ったTerraformの暗号化で作成済なら不要）
+      - SOPS用のKMSキーを作成（別issue、Terraformにおける機密情報の管理で作成済なら不要）
         - KMSのTerraformコードは`codes/sops/terraform`に配置
+        - KMSキーにアクセスできるIAMユーザーを制限する
+        - プロジェクトのrootに`.sops.yaml`を作成し、作成したKMSキーで暗号化する設定をする
       - SOPSを使用したSecret暗号化の実装
         - 適当なKey/ValueをもったSecretのマニフェストを作成
         - SOPSを使用してSecretマニフェストを暗号化（デプロイはしなくていいです）
-  - title: SOPSを使ったTerraformの暗号化
+  - title: Terraformにおける機密情報の管理
     body: |
-      SOPSを使用してTerraformの設定ファイルを暗号化することも可能です。これにより、機密情報を安全に管理しつつ、Infrastructure as Codeを実現できます。
+      Terraformでは、機密情報を安全に管理するために注意が必要です。
 
-      [mozilla/sops: Simple and flexible tool for managing secrets](https://github.com/mozilla/sops)
+      ## Terraformでの機密情報
+      - コードに機密情報をベタ書きにしてしまうとGitにコミットした際に漏洩するリスクがある
+      - tfstateに機密情報を含む設定した値が書かれる
 
-      ## TerraformでのSOPSの使用例
-      1. SOPS用のKMSキーを作成
-      2. Terraformの設定ファイルを作成
-      3. SOPSを使用してTerraformの設定ファイルを暗号化
-      4. 暗号化されたファイルをGitリポジトリにコミット
-      5. デプロイ時にSOPSコマンドで復号化してTerraformに適用
+      ## 対策方法
+
+      - コードの機密情報の対策
+        - コードに書く機密情報はダミー値を使いignore_changesにしてデプロイする。運用で使う値は別途マネージメントコンソール等で変更する
+        - Secret Manager等の外部ストアを使用して機密情報を管理する。コードではdataを使い値を参照する
+        - SOPS等の暗号化ツールを使い値を暗号化。コードではdataを使い値を参照する
+      - tfstateの機密情報の対策
+        - tfstateへのアクセスを制限する
+
+      本プラクティスでは、SOPSを使用した機密情報の暗号化とtfstateへのアクセス制限を行います。
+
+      ## SOPSの概要
+      - **SOPS**はYAML/JSONファイルの値を暗号化するCLIツール
+      - **KMSやPGPキー**を使用して暗号化
+      - YAML/JSONの値のみを暗号化し、構造は可読性を保持
+      - **暗号化されたファイルをGitで管理** - 機密情報を安全にバージョン管理
+
+      ## SOPSによる暗号化手順
+      - (事前準備) KMS等の暗号化キーを用意
+      - SOPSコマンドを使用して機密情報を含むファイルを暗号化
+      - TerraformはSOPSプロバイダーを使い暗号化されたファイルをdataで参照
+
+      ## SOPSのTerraform統合
+      - Terraformには[SOPS](https://registry.terraform.io/providers/carlpett/sops/latest/docs)プロバイダーがある
+      - Terraform実行時にSOPSプロバイダーが暗号化されたファイルを復号化し、値を参照できるようにする
+
+      # プラクティス
+      - SOPS用のKMSキーを作成（別issue、SOPSを使ったK8s Secretの暗号化で作成済なら不要）
+        - KMSのTerraformコードは`codes/sops/terraform`に配置
+        - KMSキーにアクセスできるIAMユーザーを制限する
+        - プロジェクトのrootに`.sops.yaml`を作成し、作成したKMSキーで暗号化する設定をする
+      - SOPSを使用した機密情報の暗号化の実装
+        - 適当なKey/Valueをもったyamlファイルを`codes/sops/terraform`に作成
+        - SOPSでそのyamlファイルを暗号化
+        - `codes/sops/terraform`にSecretManagerのTerraformコードを作成
+          - SecretManagerに保管する値はSOPSで暗号化した値を参照する
+      - tfbackendモジュールを改良しS3バケットにアクセスできるIAMユーザーを制限する
