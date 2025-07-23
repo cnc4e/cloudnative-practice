@@ -6,6 +6,14 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.1"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.4"
+    }
+    sops = {
+      source  = "carlpett/sops"
+      version = "~> 1.0"
+    }
   }
 
   backend "s3" {
@@ -27,3 +35,4 @@ provider "aws" {
   }
 }
 
+provider "sops" {}
