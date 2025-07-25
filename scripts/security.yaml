@@ -903,3 +903,40 @@ issues:
         - `codes/sops/terraform`にSecretManagerのTerraformコードを作成
           - SecretManagerに保管する値はSOPSで暗号化した値を参照する
       - tfbackendモジュールを改良しS3バケットにアクセスできるIAMユーザーを制限する
+  - title: ノードの暗号化
+    body: |
+      EKSのノードは一時的なものとして使うことが多いですが、一時的に機密情報を格納することもあります。そのため、ノードの暗号化を行うことで、機密情報の漏洩リスクを低減できます。
+
+      # ノードの暗号化の必要性
+      - ノードのEBSボリュームに機密情報が格納されることがある
+      - 物理的な不正アクセスにより、機密情報が漏洩するリスクがある
+      - ノードのEBSボリュームを暗号化することで、機密情報の漏洩リスクを低減できる 
+      
+      # 解決策
+      - EBSデフォルトの暗号化を有効にし、新規に作成されるEBSボリュームを自動的に暗号化する
+      - （Fargate、EKS AutoModeの場合）ノードディスクはデフォルトで暗号化される
+      
+      本プラクティスでは EKS AutoMode におけるノードの暗号化を確認します。
+
+      # EKS AutoModeのノード暗号化
+      - EKS AutoModeでは、ノードのEBSボリュームがデフォルトで暗号化される
+      - 暗号化はAWS KMSを使用して行われ、デフォルトではAWSマネージドの`aws/ebs`キーが使用される
+      - `nodeclass`リソースの`spec.ephemeralStorage.kmsKeyID`で任意のKMSキーを指定することも可能
+      
+      # プラクティス
+      
+      - EKS AutoModeのノード暗号化を確認する
+        - EKS AutoModeのワーカーノードを確認し、EBSボリュームが`aws/ebs`キーで暗号化されていることを確認する
+
+      ## 更に発展的なプラクティス
+      このプラクティスは余裕がなければやらなくてもいいです。
+
+      CMKを使いノードのEBSボリュームを暗号化する。
+      新規にnodeclassおよびnodepoolを作成し、ノードのEBSボリュームをカスタマーKMSキーで暗号化する。
+
+      - ノード暗号化用のカスタマーKMSキーを作成する
+      - `nodeClass`および`nodePool`を新たに作成する
+        - `nodeClass`の`spec.ephemeralStorage.kmsKeyID`にカスタマーKMSキーを指定する
+        - `nodePool`にはノードに任意のラベルを付与する
+      - 作成し`nodePool`でPodを起動させる。nodeSelector等でノードに付与した任意のラベルを指定するといい
+      - 作成されたノードを確認しEBSがCMKで暗号化されていることを確認する

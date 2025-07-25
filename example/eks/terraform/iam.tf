@@ -41,6 +41,12 @@ resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSNetworkingPolicy" {
   role       = aws_iam_role.cluster.name
 }
 
+# #67 CMK暗号化のため追加
+resource "aws_iam_role_policy_attachment" "cluster_AWSKeyManagementServicePowerUser" {
+  policy_arn = "arn:aws:iam::aws:policy/AWSKeyManagementServicePowerUser"
+  role       = aws_iam_role.cluster.name
+}
+
 # EKS ノード用 IAM ロール
 resource "aws_iam_role" "node" {
   name = "${local.name_prefix}-eks-node-role"
@@ -80,5 +86,11 @@ resource "aws_iam_role_policy_attachment" "node_AmazonEKSWorkerNodeMinimalPolicy
 
 resource "aws_iam_role_policy_attachment" "node_AmazonEC2ContainerRegistryPullOnly" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly"
+  role       = aws_iam_role.node.name
+}
+
+# #67 CMK暗号化のため追加
+resource "aws_iam_role_policy_attachment" "node_AWSKeyManagementServicePowerUser" {
+  policy_arn = "arn:aws:iam::aws:policy/AWSKeyManagementServicePowerUser"
   role       = aws_iam_role.node.name
 }
