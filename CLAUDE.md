@@ -114,6 +114,91 @@ Update source code in `/codes/backend/app/` and `/codes/frontend/app/`. Create K
 ### Documentation Updates
 Modify practice guides in `/docs/` directory, maintaining the structured learning progression.
 
+## Adding New Practice
+
+新しいプラクティスを追加する際は、以下の雛形に従って一貫性のある構造で作成してください。
+
+- プロンプトで与えられた内容を基に、以下のようなYAML形式で新しいプラクティスのissueを作成します。
+
+```yaml
+issues:
+  - title: プラクティスのタイトル
+    body: |
+      新プラクティスの概要を1～2文で記載します。
+
+      # 課題や必要性
+      - このプラクティスがなぜ必要か、どんなリスクがあるかを記載
+      
+      # 解決策
+      - 課題や必要性に対する解決策の選択肢を挙げる
+      - 解決策の内、今回はどの選択肢を採用するか理由と共に明記します。
+      
+      # 解決策の説明
+      - 選択した解決策の簡単な説明
+      - 解決策を実装するための手順を箇条書きで記載します。
+      
+      # プラクティス
+      - 生徒が実際に行うべき内容を箇条書きで記載します。
+      - さらに発展的なプラクティスがあれば、最後にその内容を記載します。
+```
+
+以下は新しいプラクティスの例です。
+
+```yaml
+  - title: ノードの暗号化
+    body: |
+      EKSのノードは一時的なものとして使うことが多いですが、一時的に機密情報を格納することもあります。そのため、ノードの暗号化を行うことで、機密情報の漏洩リスクを低減できます。
+
+      # ノードの暗号化の必要性
+      - ノードのEBSボリュームに機密情報が格納されることがある
+      - 物理的な不正アクセスにより、機密情報が漏洩するリスクがある
+      - ノードのEBSボリュームを暗号化することで、機密情報の漏洩リスクを低減できる 
+      
+      # 解決策
+      - EBSデフォルトの暗号化を有効にし、新規に作成されるEBSボリュームを自動的に暗号化する
+      - （Fargate、EKS AutoModeの場合）ノードディスクはデフォルトで暗号化される
+      
+      本プラクティスでは EKS AutoMode を採用しているため、EKS Automode におけるノードの暗号化を確認します。
+
+      # EKS AutoModeのノード暗号化
+      - EKS AutoModeでは、ノードのEBSボリュームがデフォルトで暗号化される
+      - 暗号化はAWS KMSを使用して行われ、デフォルトではAWSマネージドの`aws/ebs`キーが使用される
+      - `nodeclass`リソースの`spec.ephemeralStorage.kmsKeyID`で任意のKMSキーを指定することも可能
+      
+      ## CMKを使ったノードのEBSボリュームの暗号化
+
+      - KMSキーを作成する
+        - リソースポリシーで`EKSのクラスターロール`および`ノードロール`からのアクセスを許可する
+        - `EKSのクラスターロール`および`ノードロール`にもKMSを使用する権限を付与する
+      - `nodeClass`および`nodePool`を新たに作成
+        - `nodeClass`の`spec.ephemeralStorage.kmsKeyID`にカスタマーKMSキーを指定
+
+      # プラクティス
+      
+      - EKS AutoModeのノード暗号化を確認する
+        - EKS AutoModeのワーカーノードを確認し、EBSボリュームが`aws/ebs`キーで暗号化されていることを確認する
+
+      ## 更に発展的なプラクティス
+      このプラクティスは余裕がなければやらなくてもいいです。
+
+      CMKを使いノードのEBSボリュームを暗号化する。
+      新規にnodeclassおよびnodepoolを作成し、ノードのEBSボリュームをカスタマーKMSキーで暗号化する。
+
+      - ノード暗号化用のカスタマーKMSキーを作成する
+      - `nodeClass`および`nodePool`を新たに作成する
+        - `nodeClass`の`spec.ephemeralStorage.kmsKeyID`にカスタマーKMSキーを指定する
+        - `nodePool`にはノードに任意のラベルを付与する
+      - 作成し`nodePool`でPodを起動させる。nodeSelector等でノードに付与した任意のラベルを指定するといい
+      - 作成されたノードを確認しEBSがCMKで暗号化されていることを確認する
+```
+
+### 命名規則とパターン
+
+- **プロジェクト共通**: タグは `cn-practice` + `mori`、リージョンは `ap-northeast-2`
+- **ファイル命名**: アンダースコア接頭辞 (`_versions.tf`, `_locals.tf`) + リソース名ファイル
+- **セキュリティ**: 全K8sマニフェストで非root実行とreadonly filesystem
+- **段階的学習**: 概念説明 → 実践 → 応用の構造を維持
+
 ## Important Notes
 
 - This is primarily a **learning repository** - prioritize educational clarity over production optimization
