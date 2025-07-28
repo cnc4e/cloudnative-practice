@@ -1073,14 +1073,17 @@ issues:
       - 一般的なアプリケーションに必要なシステムコールのみを許可
       - 危険なシステムコール（reboot、mount等）をブロック
       - 設定が簡単で多くのワークロードで利用可能
+      - EKS Automodeのノードはcontainerdを使用しているため、デフォルトのSeccompプロファイルは次の内容 [seccomp_default.go](https://github.com/containerd/containerd/blob/main/contrib/seccomp/seccomp_default.go)
 
       ## Kubernetesでの設定方法
-      PodのSecurityContextで以下のように設定：
+      PodレベルまたはコンテナレベルのSecurityContextで以下のように設定：
       ```yaml
       securityContext:
         seccompProfile:
           type: RuntimeDefault
       ```
+
+      Podレベルとコンテナレベルの両方を設定した場合、コンテナレベルの設定が優先されます。
 
       # プラクティス
       - frontendとbackendのPodにSeccompプロファイルを設定する
