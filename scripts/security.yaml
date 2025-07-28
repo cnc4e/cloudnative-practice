@@ -519,56 +519,60 @@ issues:
       # プラクティス
       - frontendとbackendのSecurityContextで特権をすべてはく奪する
 
-  - title: Falcoによるランタイムセキュリティ監視
+  - title: Seccompプロファイルによるシステムコール制限
     body: |
-      Falco は、CNCF（Cloud Native Computing Foundation）にホストされているOSSで、コンテナやKubernetesクラスタの異常な挙動をリアルタイムに検知するためのランタイムセキュリティエンジンです。
+      Seccomp（Secure Computing）は、コンテナが実行できるシステムコールを制限することで、攻撃面を大幅に削減するLinuxセキュリティ機能です。コンテナのランタイムセキュリティを向上させ、潜在的な脆弱性の悪用を防ぐことができます。
 
-      [Falco公式ドキュメント](https://falco.org/docs/)
+      # Seccompの必要性
+      - コンテナは通常、必要以上に多くのシステムコールにアクセス可能
+      - 悪意のあるプロセスがシステムコールを通じてホストシステムを攻撃する可能性
+      - 脆弱性の悪用によるコンテナエスケープのリスク軽減
+      - 最小権限の原則に従ったセキュアなコンテナ実行環境の実現
 
-      ## Falcoの必要性
+      # 解決策
+      - デフォルトSeccompプロファイル（RuntimeDefault）の適用
+        - コンテナランタイムが提供する安全なデフォルトプロファイルを使用
+        - 一般的なワークロードに適した制限を自動的に適用
+      - カスタムSeccompプロファイルの作成
+        - アプリケーション固有の要件に合わせたプロファイル作成
+        - より厳格な制限やアプリケーション特有のシステムコールの許可
 
-      - Kubernetesのデフォルト設定では多くの通信が許可されている
-      - 静的なセキュリティ設定だけでは実行時の脅威を検出できない
-      - コンテナブレイクアウトや特権昇格などの動的な攻撃への対応が必要
+      本プラクティスでは RuntimeDefault プロファイルを採用します。これにより、コンテナランタイムが提供する適切なデフォルト制限を適用し、セキュリティを向上させることができます。
 
-      ## Falcoで検出できる脅威
+      # Seccompの動作原理
+      - システムコールを傍受し、許可されたもののみを通す
+      - ブロックリスト方式ではなく、アローリスト方式でより安全
+      - Linuxカーネルの機能としてオーバーヘッドが非常に少ない
+      - コンテナランタイム（containerd/Docker）がデフォルトプロファイルを提供
 
-      Falcoは以下のようなセキュリティ脅威を検出できます。
+      ## RuntimeDefaultプロファイル
+      - コンテナランタイムが提供するデフォルトのSeccompプロファイル
+      - 一般的なアプリケーションに必要なシステムコールのみを許可
+      - 危険なシステムコール（reboot、mount等）をブロック
+      - 設定が簡単で多くのワークロードで利用可能
+      - EKS Automodeのノードはcontainerdを使用しているため、デフォルトのSeccompプロファイルは次の内容 [seccomp_default.go](https://github.com/containerd/containerd/blob/main/contrib/seccomp/seccomp_default.go)
 
-      - **ファイルシステム攻撃**: システムファイルの不正な読み書き、設定ファイル改ざん
-      - **プロセス異常**: 予期しないバイナリ実行、シェルスクリプトの異常実行
+      ## Kubernetesでの設定方法
+      PodレベルまたはコンテナレベルのSecurityContextで以下のように設定：
+      ```yaml
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      ```
 
-      他にもさまざまな脅威を検出可能です。Falcoがデフォルトで監視するルールは以下のリンクから確認できます。
-
-      [Default Rules | Falco](https://falco.org/docs/reference/rules/default-rules/)
-
-      ## FalcoのKubernetes統合
-
-      ### Falcoの動作
-      - ノードのシステムコールをドライバーを使って監視
-        - EKS Automode のノードの場合は`Modern eBPF`を使用
-
-      ### DaemonSet配置
-      - 各ノードでカーネルイベントを監視するためDaemonSetとして配置
-      - 全てのワーカーノードでのセキュリティ監視を実現
-      - ノードレベルでのシステムコール監視
-
-      ### 権限要件
-      - カーネルアクセスのため**特権モード**での実行が必要
-      - セキュリティコンテキストでの適切な権限設定
-      - ホストのプロセスファイルシステムへのアクセス
+      Podレベルとコンテナレベルの両方を設定した場合、コンテナレベルの設定が優先されます。
 
       # プラクティス
-      - FalcoをEKSクラスタに導入する
-        - Helmチャートを使用してFalcoをインストール [Falcoをデプロイする | KubernetesでFalcoを試す](https://falco.org/docs/getting-started/falco-kubernetes-quickstart/#deploy-falco)
-      - 動作確認のためbackendまたはfrontendでルールをトリガーする。Falcoのログに疑わしい挙動が出力されることを確認する [ルールをトリガーする | KubernetesでFalcoを試す](https://falco.org/docs/getting-started/falco-kubernetes-quickstart/#trigger-a-rule)
+      - frontendとbackendのPodにSeccompプロファイルを設定する
+        - SecurityContextに `seccompProfile: type: RuntimeDefault` を追加
+        - 設定後、Podが正常に起動し動作することを確認する
 
-      # 発展的なプラクティス
+      ## 更に発展的なプラクティス
       このプラクティスは余裕がなければやらなくてもいいです。
 
-      - カスタムルールの作成
-        - アプリケーション固有のセキュリティルール作成
-        - ルールの優先度とノイズ対策の設定
+      - カスタムSeccompプロファイルの作成と適用
+        - Security Profiles Operatorを使用してアプリケーション固有のプロファイルを生成
+        - 生成されたプロファイルをPodに適用し、より厳格な制限を実現
 
   - title: SELinuxによるファイルアクセスの制限
     body: |
@@ -606,71 +610,6 @@ issues:
         - ノードでSELinuxが有効な場合、PodのSecurityContextでSELinuxオプションを設定可能
           - オプション指定しなくてもコンテナランタイムにより一意なコンテキストが割り振られ、コンテナ内のファイルのみアクセスできるように制限される [Kubernetes API Reference Docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#securitycontext-v1-core)
           - EKS Automode (Bottleroket)ではすべての非特権Podに`container_t`タイプのラベルが自動的に付与されコンテナ実行ユーザーがrootでもアクションが制限される[Bottlerocket のセキュリティ機能 〜オープンソースの Linux ベースオペレーティングシステム〜 | Amazon Web Services ブログ](https://aws.amazon.com/jp/blogs/news/security-features-of-bottlerocket-an-open-source-linux-based-operating-system/)
-
-  - title: GuardDuty EKS Protectionの有効化とセキュリティ監視
-    body: |
-      Amazon GuardDutyは、AWSアカウントおよびワークロードを脅威から保護するためのマネージド型脅威検出サービスです。EKSの脅威も検出可能です。
-
-      [Amazon GuardDuty](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/what-is-guardduty.html)
-
-      ## EKS に関連したGuardDutyの機能
-
-      - [EKS Protection](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/kubernetes-protection.html)
-      - [Runtime Monitoring](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/runtime-monitoring.html)
-      - [Malware Protection for EC2](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/malware-protection.html)
-
-      ### EKS Protection
-
-      EKSクラスタの脅威を検出するための機能です。EKSの監査ログを使い、不正な操作を検出します。
-
-      EKS Protection はアカウント単位で機能を有効または無効にします。
-
-      以下の脅威を検出します。
-
-      [EKS Protection の検出結果タイプ](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/guardduty-finding-types-eks-audit-logs.html)
-
-      ### Runtime Monitoring
-
-      EKSクラスタ上で実行されるコンテナのランタイム挙動を監視し、リアルタイムで脅威を検出します。EC2ベースのワーカーノードでのみ利用可能です。
-
-      Runtime Monitoring はアカウント単位で機能を有効または無効にします。
-
-      さらに、EKSに GuardDuty セキュリティエージェント をデプロイすることで監視できます。導入方法は自動または手動が選べます。
-
-      - 自動: GuardDutyがEKSにエージェントをデプロイします。デフォルトではすべてのEKSクラスタに対して自動的に有効になります。任意のクラスタを選択または除外できます。VPCエンドポイントが自動で作成されます。[Amazon EKS リソースのセキュリティエージェントの自動管理](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/managing-gdu-agent-eks-automatically.html)
-      - 手動: EKSクラスタにエージェントを手動でデプロイします。EKSアドオンで導入可能です。必要なVPCエンドポイントも手動で作成します。[Amazon EKS クラスターのセキュリティエージェントの手動管理](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/managing-gdu-agent-eks-manually.html)
-
-      以下の脅威を検出します。
-
-      [GuardDuty Runtime Monitoring の検出結果タイプ](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/findings-runtime-monitoring.html)
-
-      ### Malware Protection for EC2
-
-      EC2インスタン上のアプリケーション、コンテナで疑わしい動作を検出した際にEBSボリュームをスキャンし、マルウェアの検出を行います。EKSクラスタ上のEC2インスタンスで実行されるPodも対象です。
-
-      スキャンは以下の脅威を検出した際に自動で行われます。また、オンデマンドで手動でスキャンも可能です。
-
-      [GuardDuty 実行型マルウェアスキャンを起動する検出結果](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/gd-findings-initiate-malware-protection-scan.html)
-
-      以下の脅威を検出します。
-
-      [Malware Protection for EC2 の検出結果のタイプ](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/findings-malware-protection.html)
-
-      # プラクティス
-      - GuardDutyを有効化し、EKSを保護する
-        - Terraformのguarddutyモジュールを作成する
-        - アカウントでGuardDutyを有効化する（すでにアカウントで有効になっている場合はコード実装不要）
-        - EKS Protectionを有効化（すでにアカウントで有効になっている場合はコード実装不要）
-        - Runtime Monitoringを有効化（すでにアカウントで有効になっている場合はコード実装不要）
-          - GuardDutyセキュリティエージェントをEKSクラスタに**手動**でデプロイする
-          - VPCエンドポイントを作成する
-        - Malware Protection for EC2を有効化（すでにアカウントで有効になっている場合はコード実装不要）
-      - 以下で動作確認可能
-        - EKSクラスタ内のcurlコマンドが実行できる任意のPod(frontend等)で以下を実行
-          ``` bash
-          curl http://169.254.169.254.sslip.io/latest/meta-data/
-          ```
-        - しばらく(2分位)するとRuntime Monitoringで`UnauthorizedAccess:Runtime/MetadataDNSRebind`が検出される。また、それを契機にMalware protection for EC2がEBSをスキャンする。
 
   - title: 信頼できるベースイメージの選定
     body: |
@@ -993,6 +932,125 @@ issues:
       - 作成し`nodePool`でPodを起動させる。nodeSelector等でノードに付与した任意のラベルを指定するといい
       - 作成されたノードを確認しEBSがCMKで暗号化されていることを確認する
 
+  - title: ServiceMeshによるmTLS
+    body: |
+
+  - title: Falcoによるランタイムセキュリティ監視
+    body: |
+      Falco は、CNCF（Cloud Native Computing Foundation）にホストされているOSSで、コンテナやKubernetesクラスタの異常な挙動をリアルタイムに検知するためのランタイムセキュリティエンジンです。
+
+      [Falco公式ドキュメント](https://falco.org/docs/)
+
+      ## Falcoの必要性
+
+      - Kubernetesのデフォルト設定では多くの通信が許可されている
+      - 静的なセキュリティ設定だけでは実行時の脅威を検出できない
+      - コンテナブレイクアウトや特権昇格などの動的な攻撃への対応が必要
+
+      ## Falcoで検出できる脅威
+
+      Falcoは以下のようなセキュリティ脅威を検出できます。
+
+      - **ファイルシステム攻撃**: システムファイルの不正な読み書き、設定ファイル改ざん
+      - **プロセス異常**: 予期しないバイナリ実行、シェルスクリプトの異常実行
+
+      他にもさまざまな脅威を検出可能です。Falcoがデフォルトで監視するルールは以下のリンクから確認できます。
+
+      [Default Rules | Falco](https://falco.org/docs/reference/rules/default-rules/)
+
+      ## FalcoのKubernetes統合
+
+      ### Falcoの動作
+      - ノードのシステムコールをドライバーを使って監視
+        - EKS Automode のノードの場合は`Modern eBPF`を使用
+
+      ### DaemonSet配置
+      - 各ノードでカーネルイベントを監視するためDaemonSetとして配置
+      - 全てのワーカーノードでのセキュリティ監視を実現
+      - ノードレベルでのシステムコール監視
+
+      ### 権限要件
+      - カーネルアクセスのため**特権モード**での実行が必要
+      - セキュリティコンテキストでの適切な権限設定
+      - ホストのプロセスファイルシステムへのアクセス
+
+      # プラクティス
+      - FalcoをEKSクラスタに導入する
+        - Helmチャートを使用してFalcoをインストール [Falcoをデプロイする | KubernetesでFalcoを試す](https://falco.org/docs/getting-started/falco-kubernetes-quickstart/#deploy-falco)
+      - 動作確認のためbackendまたはfrontendでルールをトリガーする。Falcoのログに疑わしい挙動が出力されることを確認する [ルールをトリガーする | KubernetesでFalcoを試す](https://falco.org/docs/getting-started/falco-kubernetes-quickstart/#trigger-a-rule)
+
+      # 発展的なプラクティス
+      このプラクティスは余裕がなければやらなくてもいいです。
+
+      - カスタムルールの作成
+        - アプリケーション固有のセキュリティルール作成
+        - ルールの優先度とノイズ対策の設定
+
+  - title: GuardDuty EKS Protectionの有効化とセキュリティ監視
+    body: |
+      Amazon GuardDutyは、AWSアカウントおよびワークロードを脅威から保護するためのマネージド型脅威検出サービスです。EKSの脅威も検出可能です。
+
+      [Amazon GuardDuty](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/what-is-guardduty.html)
+
+      ## EKS に関連したGuardDutyの機能
+
+      - [EKS Protection](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/kubernetes-protection.html)
+      - [Runtime Monitoring](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/runtime-monitoring.html)
+      - [Malware Protection for EC2](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/malware-protection.html)
+
+      ### EKS Protection
+
+      EKSクラスタの脅威を検出するための機能です。EKSの監査ログを使い、不正な操作を検出します。
+
+      EKS Protection はアカウント単位で機能を有効または無効にします。
+
+      以下の脅威を検出します。
+
+      [EKS Protection の検出結果タイプ](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/guardduty-finding-types-eks-audit-logs.html)
+
+      ### Runtime Monitoring
+
+      EKSクラスタ上で実行されるコンテナのランタイム挙動を監視し、リアルタイムで脅威を検出します。EC2ベースのワーカーノードでのみ利用可能です。
+
+      Runtime Monitoring はアカウント単位で機能を有効または無効にします。
+
+      さらに、EKSに GuardDuty セキュリティエージェント をデプロイすることで監視できます。導入方法は自動または手動が選べます。
+
+      - 自動: GuardDutyがEKSにエージェントをデプロイします。デフォルトではすべてのEKSクラスタに対して自動的に有効になります。任意のクラスタを選択または除外できます。VPCエンドポイントが自動で作成されます。[Amazon EKS リソースのセキュリティエージェントの自動管理](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/managing-gdu-agent-eks-automatically.html)
+      - 手動: EKSクラスタにエージェントを手動でデプロイします。EKSアドオンで導入可能です。必要なVPCエンドポイントも手動で作成します。[Amazon EKS クラスターのセキュリティエージェントの手動管理](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/managing-gdu-agent-eks-manually.html)
+
+      以下の脅威を検出します。
+
+      [GuardDuty Runtime Monitoring の検出結果タイプ](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/findings-runtime-monitoring.html)
+
+      ### Malware Protection for EC2
+
+      EC2インスタン上のアプリケーション、コンテナで疑わしい動作を検出した際にEBSボリュームをスキャンし、マルウェアの検出を行います。EKSクラスタ上のEC2インスタンスで実行されるPodも対象です。
+
+      スキャンは以下の脅威を検出した際に自動で行われます。また、オンデマンドで手動でスキャンも可能です。
+
+      [GuardDuty 実行型マルウェアスキャンを起動する検出結果](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/gd-findings-initiate-malware-protection-scan.html)
+
+      以下の脅威を検出します。
+
+      [Malware Protection for EC2 の検出結果のタイプ](https://docs.aws.amazon.com/ja_jp/guardduty/latest/ug/findings-malware-protection.html)
+
+      # プラクティス
+      - GuardDutyを有効化し、EKSを保護する
+        - Terraformのguarddutyモジュールを作成する
+        - アカウントでGuardDutyを有効化する（すでにアカウントで有効になっている場合はコード実装不要）
+        - EKS Protectionを有効化（すでにアカウントで有効になっている場合はコード実装不要）
+        - Runtime Monitoringを有効化（すでにアカウントで有効になっている場合はコード実装不要）
+          - GuardDutyセキュリティエージェントをEKSクラスタに**手動**でデプロイする
+          - VPCエンドポイントを作成する
+        - Malware Protection for EC2を有効化（すでにアカウントで有効になっている場合はコード実装不要）
+      - 以下で動作確認可能
+        - EKSクラスタ内のcurlコマンドが実行できる任意のPod(frontend等)で以下を実行
+          ``` bash
+          curl http://169.254.169.254.sslip.io/latest/meta-data/
+          ```
+        - しばらく(2分位)するとRuntime Monitoringで`UnauthorizedAccess:Runtime/MetadataDNSRebind`が検出される。また、それを契機にMalware protection for EC2がEBSをスキャンする。
+
   - title: 静的解析ツールによるTerraformのセキュリティスキャン
     body: |
       TerraformやK8sマニフェストを静的解析ツールを使用してスキャンすることで、セキュリティの脆弱性や設定ミスを事前に検出できます。Infrastructure as Code（IaC）のセキュリティベストプラクティスに従っているかを自動的にチェックすることで、安全なインフラ構築を実現できます。
@@ -1042,57 +1100,5 @@ issues:
         - 検出されたセキュリティ問題を確認し、重要度の高い問題に対応する
         - 対応後、再スキャンを実行して問題が解決されたことを確認する
 
-  - title: Seccompプロファイルによるシステムコール制限
+  - title: SBOM
     body: |
-      Seccomp（Secure Computing）は、コンテナが実行できるシステムコールを制限することで、攻撃面を大幅に削減するLinuxセキュリティ機能です。コンテナのランタイムセキュリティを向上させ、潜在的な脆弱性の悪用を防ぐことができます。
-
-      # Seccompの必要性
-      - コンテナは通常、必要以上に多くのシステムコールにアクセス可能
-      - 悪意のあるプロセスがシステムコールを通じてホストシステムを攻撃する可能性
-      - 脆弱性の悪用によるコンテナエスケープのリスク軽減
-      - 最小権限の原則に従ったセキュアなコンテナ実行環境の実現
-
-      # 解決策
-      - デフォルトSeccompプロファイル（RuntimeDefault）の適用
-        - コンテナランタイムが提供する安全なデフォルトプロファイルを使用
-        - 一般的なワークロードに適した制限を自動的に適用
-      - カスタムSeccompプロファイルの作成
-        - アプリケーション固有の要件に合わせたプロファイル作成
-        - より厳格な制限やアプリケーション特有のシステムコールの許可
-
-      本プラクティスでは RuntimeDefault プロファイルを採用します。これにより、コンテナランタイムが提供する適切なデフォルト制限を適用し、セキュリティを向上させることができます。
-
-      # Seccompの動作原理
-      - システムコールを傍受し、許可されたもののみを通す
-      - ブロックリスト方式ではなく、アローリスト方式でより安全
-      - Linuxカーネルの機能としてオーバーヘッドが非常に少ない
-      - コンテナランタイム（containerd/Docker）がデフォルトプロファイルを提供
-
-      ## RuntimeDefaultプロファイル
-      - コンテナランタイムが提供するデフォルトのSeccompプロファイル
-      - 一般的なアプリケーションに必要なシステムコールのみを許可
-      - 危険なシステムコール（reboot、mount等）をブロック
-      - 設定が簡単で多くのワークロードで利用可能
-      - EKS Automodeのノードはcontainerdを使用しているため、デフォルトのSeccompプロファイルは次の内容 [seccomp_default.go](https://github.com/containerd/containerd/blob/main/contrib/seccomp/seccomp_default.go)
-
-      ## Kubernetesでの設定方法
-      PodレベルまたはコンテナレベルのSecurityContextで以下のように設定：
-      ```yaml
-      securityContext:
-        seccompProfile:
-          type: RuntimeDefault
-      ```
-
-      Podレベルとコンテナレベルの両方を設定した場合、コンテナレベルの設定が優先されます。
-
-      # プラクティス
-      - frontendとbackendのPodにSeccompプロファイルを設定する
-        - SecurityContextに `seccompProfile: type: RuntimeDefault` を追加
-        - 設定後、Podが正常に起動し動作することを確認する
-
-      ## 更に発展的なプラクティス
-      このプラクティスは余裕がなければやらなくてもいいです。
-
-      - カスタムSeccompプロファイルの作成と適用
-        - Security Profiles Operatorを使用してアプリケーション固有のプロファイルを生成
-        - 生成されたプロファイルをPodに適用し、より厳格な制限を実現
