@@ -52,7 +52,7 @@
   - SOPSを使ったK8s Secretの暗号化
   - Terraformにおける機密情報の管理
   - ノードの暗号化
-  - ServiceMeshによるmTLS
+  - ServiceMeshによるPod間通信の暗号化（mTLS）
 
 ### 監視・検知
 

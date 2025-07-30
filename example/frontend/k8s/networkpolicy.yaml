@@ -13,4 +13,6 @@ spec:
   ingress:
   - from:
     - ipBlock:
-        cidr: 10.0.0.0/16 
+        cidr: 10.0.0.0/16
+    - ipBlock:
+        cidr: 169.254.7.127/32 
