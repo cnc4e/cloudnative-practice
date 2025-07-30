@@ -932,8 +932,50 @@ issues:
       - 作成し`nodePool`でPodを起動させる。nodeSelector等でノードに付与した任意のラベルを指定するといい
       - 作成されたノードを確認しEBSがCMKで暗号化されていることを確認する
 
-  - title: ServiceMeshによるmTLS
+  - title: ServiceMeshによるPod間通信の暗号化（mTLS）
     body: |
+      Service Mesh（サービスメッシュ）を使用してマイクロサービス間の通信にmTLS（相互TLS）認証を実装することで、Pod間通信のセキュリティを大幅に向上させることができます。
+
+      # 課題や必要性
+      - Kubernetes内のPod間通信はデフォルトで暗号化されておらず、通信内容の盗聴リスクがある
+      - サービス間の認証・認可の仕組みがなく、なりすましの可能性がある
+      - ネットワークレベルでの通信制御や可観測性が不十分
+      - セキュリティポリシーの一元管理が困難
+
+      # 解決策
+      - Istio Service MeshによるmTLS実装
+        - サイドカープロキシパターンでの実装
+        - Ambient Meshモードでの実装（より軽量）
+      - Linkerd Service Meshによる実装
+      - Consul Connect による実装
+      
+      本プラクティスでは Istio の Ambient モードを採用します。従来のサイドカーモードと比較してリソース効率が良く、既存のアプリケーションを変更することなく透過的にmTLSを実装できるためです。
+
+      # 解決策の説明
+      Istio Ambient モードは、各ノードでztunnelプロキシが動作し、Pod間通信を透過的に傍受してmTLS暗号化を行います。
+      - IstiodがCA（Certificate Authority）として動作し、SPIFFE証明書を管理
+      - ztunnelが各ノードでL4プロキシとして動作し、mTLS terminationを実行
+      - アプリケーションのコード変更やサイドカー注入が不要
+      - 必要に応じてwaypoint proxyでL7レベルの制御も可能
+
+      実装手順：
+      - IstioのAmbient モードをEKSクラスタにインストール
+      - 対象のNamespaceをAmbient meshに追加
+
+      # プラクティス
+      - IstioのAmbient モードをEKSクラスタに導入する [Istio / Install with Helm](https://istio.io/latest/docs/ambient/install/helm/)
+        - Helmを使用してIstioの各コンポーネントをインストールする
+          - istio-base（CRD等の基盤）
+          - istiod（制御プレーン）
+          - istio-cni（ネットワーク設定）
+          - ztunnel（データプレーン）
+      - frontendとbackendのNamespaceをAmbient meshに追加する
+        - readiness/liveness ProbeとNetworkPolicyを設定しているとProbeに失敗する可能性あり。その場合は問題を解決する
+
+      ## 更に発展的なプラクティス
+      このプラクティスは余裕がなければやらなくてもいいです。
+
+      - PrometheusとKialiを導入しmTLSで暗号化された通信の可視化をする [Istio / Secure and visualize the application](https://istio.io/latest/docs/ambient/getting-started/secure-and-visualize/)
 
   - title: Falcoによるランタイムセキュリティ監視
     body: |
