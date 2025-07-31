@@ -341,7 +341,7 @@ issues:
         - 名前は`frontend`など任意
         - Namespaceは`argocd`
         - targetRevisionは`main`ブランチを指定
-        - pathはフロントエンドのK8sマニフェストが配置されている`codes/frontend.k8s`ディレクトリを指定
+        - pathはフロントエンドのK8sマニフェストが配置されている`codes/frontend/k8s`ディレクトリを指定
         - syncPolicyは`automated`を指定（[参考]](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/)）
           - automatedのオプションは特にしていしない(`{}`)
 
@@ -351,7 +351,7 @@ issues:
   - title: Argo CD にバックエンドのアプリケーションを追加する
     body: |
       バックエンドを Argo CD で管理するためのアプリケーションを追加する。
-      コードは`codes/frontend/k8s`ディレクトリに配置する。
+      コードは`codes/backend/k8s`ディレクトリに配置する。
       コードを作成し、リソースのデプロイが完了したらPRを出す。
 
       # 前提
@@ -367,7 +367,7 @@ issues:
         - 名前は`backend`など任意
         - Namespaceは`argocd`
         - targetRevisionは`main`を指定
-        - pathはバックエンドのK8sマニフェストが配置されている`codes/backend.k8s`ディレクトリを指定
+        - pathはバックエンドのK8sマニフェストが配置されている`codes/backend/k8s`ディレクトリを指定
         - syncPolicyは`automated`を指定（[参考]](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/)）
           - automatedのオプションは特にしていしない(`{}`)
 
