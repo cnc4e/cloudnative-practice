@@ -1,0 +1,25 @@
+issues:
+  - title: checkovによるポリシーチェック
+    body: |
+      hoge
+  - title: trivyによるセキュリティスキャン
+    body: |
+      hoge
+  - title: AtlantisによるPRベースのterraform plan/apply
+    body: |
+      hoge
+  - title: GitHub Actionsによる定期的なドリフトチェック
+    body: |
+      hoge
+  - title: ブランチ戦略
+    body: |
+      hoge
+  - title: モジュール化
+    body: |
+      hoge
+  - title: クラスタのバージョンアップ
+    body: |
+      hoge
+  - title: バックアップ/リカバリ
+    body: |
+      hoge
