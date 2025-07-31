@@ -14,7 +14,34 @@
 
 クラウドに関しては一般的なクラウドセキュリティに準ずるため、本プラクティスではK8sやIaCに特化したセキュリティ対策に焦点を当てます。
 
-## プラクティス
+# プラクティス
+
+## issue作成
+
+自身のGitHubアカウントに作成した`cloudnative-practice`リポジトリにIssueを作成します。issueを作成するスクリプトを用意しているためそれを使います。
+
+- まずはリポジトリのルートから以下コマンドで`scripts`ディレクトリに移動
+
+  ``` sh
+  cd scripts
+  ```
+
+- 環境変数に値を設定
+
+  ``` sh
+  export GITHUB_TOKEN={あなたのGitHubのPAT}
+  export GITHUB_REPO={あなたのGitHubアカウント名}/cloudnative-practice
+  ```
+
+- スクリプト実行
+
+  ``` sh
+  python create_issues.py security
+  ```
+
+自身のGitHubアカウントの`cloudnative-practice`リポジトリを開き、`Issues`タブに`セキュリティ`のラベルがついたissueが作成されていることを確認してください。
+
+## issue対応
 
 本プラクティスでは、多層防御（Defense in Depth）の考え方に基づき、各レイヤーでセキュリティを強化します。
 
