@@ -8,9 +8,10 @@
 
 ## プラクティス
 
+  - ポリシーチェック
+    - Checkovによるポリシーチェック
+    - CheckovによるポリシーチェックをCIに組み込む
   - CI/CDの活用
-    - checkovによるポリシーチェック
-    - trivyによるセキュリティスキャン
     - AtlantisによるPRベースのterraform plan/apply
     - GitHub Actionsによる定期的なドリフトチェック
   - ブランチ戦略
