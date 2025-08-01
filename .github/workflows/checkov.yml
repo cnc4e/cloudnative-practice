@@ -1,0 +1,102 @@
+name: Checkov Security Scan
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ 41-static-analysis ]
+
+jobs:
+  checkov:
+    runs-on: ubuntu-latest
+    name: checkov-action
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Run Checkov action
+        id: checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: ./example/actions/terraform
+          framework: terraform
+          # Scan Terraform files in codes/ directory
+          # Scan Kubernetes manifests in codes/*/k8s/ directories
+          # Use custom policies from codes/checkov/
+          check: CKV_AWS_*
+          external_checks_dirs: ./example/checkov
+          output_format: sarif
+          output_file_path: reports/results.sarif
+          download_external_modules: true
+          log_level: INFO
+
+      - name: Upload SARIF file
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/results.sarif
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && (success() || failure())
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Read SARIF results if available
+            let comment = '## Checkov Security Scan Results\n\n';
+            
+            try {
+              if (fs.existsSync('reports/results.sarif')) {
+                const sarif = JSON.parse(fs.readFileSync('reports/results.sarif', 'utf8'));
+                const runs = sarif.runs || [];
+                
+                for (const run of runs) {
+                  const results = run.results || [];
+                  comment += `### ${run.tool.driver.name}\n`;
+                  comment += `- Total issues found: ${results.length}\n`;
+                  
+                  const failedResults = results.filter(r => r.level === 'error');
+                  const warningResults = results.filter(r => r.level === 'warning');
+                  
+                  comment += `- Failed checks: ${failedResults.length}\n`;
+                  comment += `- Warning checks: ${warningResults.length}\n\n`;
+                  
+                  if (failedResults.length > 0) {
+                    comment += '#### Failed Checks:\n';
+                    for (const result of failedResults.slice(0, 10)) { // Limit to first 10
+                      const location = result.locations?.[0]?.physicalLocation;
+                      const file = location?.artifactLocation?.uri || 'Unknown';
+                      const line = location?.region?.startLine || 'N/A';
+                      comment += `- **${result.ruleId}**: ${result.message.text} (${file}:${line})\n`;
+                    }
+                    if (failedResults.length > 10) {
+                      comment += `\n... and ${failedResults.length - 10} more issues.\n`;
+                    }
+                  }
+                }
+              } else {
+                comment += 'No SARIF results file found.\n';
+              }
+            } catch (error) {
+              comment += `Error reading results: ${error.message}\n`;
+            }
+            
+            // Add workflow status
+            comment += `\n### Workflow Status\n`;
+            comment += `- Job status: ${{ job.status }}\n`;
+            comment += `- Checkov step status: ${{ steps.checkov.outcome }}\n`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Fail if Checkov found issues
+        if: steps.checkov.outcome == 'failure'
+        run: |
+          echo "Checkov found security or policy violations. Please review and fix them."
+          exit 1

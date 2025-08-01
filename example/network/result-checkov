@@ -1,0 +1,146 @@
+
+       _               _
+   ___| |__   ___  ___| | _______   __
+  / __| '_ \ / _ \/ __| |/ / _ \ \ / /
+ | (__| | | |  __/ (__|   < (_) \ V /
+  \___|_| |_|\___|\___|_|\_\___/ \_/
+
+By Prisma Cloud | version: 3.2.457 
+
+terraform scan results:
+
+Passed checks: 8, Failed checks: 6, Skipped checks: 0
+
+Check: CKV_AWS_41: "Ensure no hard coded AWS access key and secret key exists in provider"
+	PASSED for resource: aws.default
+	File: /_versions.tf:20-28
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/secrets-policies/bc-aws-secrets-5
+Check: CKV_AWS_130: "Ensure VPC subnets do not assign public IP by default"
+	PASSED for resource: aws_subnet.private["a"]
+	File: /subnet.tf:15-26
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-vpc-subnets-do-not-assign-public-ip-by-default
+Check: CKV_AWS_130: "Ensure VPC subnets do not assign public IP by default"
+	PASSED for resource: aws_subnet.private["b"]
+	File: /subnet.tf:15-26
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-vpc-subnets-do-not-assign-public-ip-by-default
+Check: CKV_AWS_130: "Ensure VPC subnets do not assign public IP by default"
+	PASSED for resource: aws_subnet.private["c"]
+	File: /subnet.tf:15-26
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-vpc-subnets-do-not-assign-public-ip-by-default
+Check: CKV2_AWS_44: "Ensure AWS route table with VPC peering does not contain routes overly permissive to all traffic"
+	PASSED for resource: aws_route_table.public
+	File: /routetable.tf:1-12
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-aws-route-table-with-vpc-peering-does-not-contain-routes-overly-permissive-to-all-traffic
+Check: CKV2_AWS_44: "Ensure AWS route table with VPC peering does not contain routes overly permissive to all traffic"
+	PASSED for resource: aws_route_table.private
+	File: /routetable.tf:21-32
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-aws-route-table-with-vpc-peering-does-not-contain-routes-overly-permissive-to-all-traffic
+Check: CKV2_AWS_35: "AWS NAT Gateways should be utilized for the default route"
+	PASSED for resource: aws_route_table.public
+	File: /routetable.tf:1-12
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-aws-nat-gateways-are-utilized-for-the-default-route
+Check: CKV2_AWS_35: "AWS NAT Gateways should be utilized for the default route"
+	PASSED for resource: aws_route_table.private
+	File: /routetable.tf:21-32
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-aws-nat-gateways-are-utilized-for-the-default-route
+Check: CKV_AWS_130: "Ensure VPC subnets do not assign public IP by default"
+	FAILED for resource: aws_subnet.public["a"]
+	File: /subnet.tf:1-13
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-vpc-subnets-do-not-assign-public-ip-by-default
+
+		1  | resource "aws_subnet" "public" {
+		2  |   for_each = local.public_subnets
+		3  | 
+		4  |   vpc_id                  = aws_vpc.this.id
+		5  |   availability_zone       = "${local.region}${each.key}"
+		6  |   cidr_block              = each.value
+		7  |   map_public_ip_on_launch = true
+		8  | 
+		9  |   tags = {
+		10 |     Name                     = "${local.name_prefix}-public-${each.key}",
+		11 |     "kubernetes.io/role/elb" = "1"
+		12 |   }
+		13 | }
+
+Check: CKV_AWS_130: "Ensure VPC subnets do not assign public IP by default"
+	FAILED for resource: aws_subnet.public["b"]
+	File: /subnet.tf:1-13
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-vpc-subnets-do-not-assign-public-ip-by-default
+
+		1  | resource "aws_subnet" "public" {
+		2  |   for_each = local.public_subnets
+		3  | 
+		4  |   vpc_id                  = aws_vpc.this.id
+		5  |   availability_zone       = "${local.region}${each.key}"
+		6  |   cidr_block              = each.value
+		7  |   map_public_ip_on_launch = true
+		8  | 
+		9  |   tags = {
+		10 |     Name                     = "${local.name_prefix}-public-${each.key}",
+		11 |     "kubernetes.io/role/elb" = "1"
+		12 |   }
+		13 | }
+
+Check: CKV_AWS_130: "Ensure VPC subnets do not assign public IP by default"
+	FAILED for resource: aws_subnet.public["c"]
+	File: /subnet.tf:1-13
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-vpc-subnets-do-not-assign-public-ip-by-default
+
+		1  | resource "aws_subnet" "public" {
+		2  |   for_each = local.public_subnets
+		3  | 
+		4  |   vpc_id                  = aws_vpc.this.id
+		5  |   availability_zone       = "${local.region}${each.key}"
+		6  |   cidr_block              = each.value
+		7  |   map_public_ip_on_launch = true
+		8  | 
+		9  |   tags = {
+		10 |     Name                     = "${local.name_prefix}-public-${each.key}",
+		11 |     "kubernetes.io/role/elb" = "1"
+		12 |   }
+		13 | }
+
+Check: CKV2_AWS_11: "Ensure VPC flow logging is enabled in all VPCs"
+	FAILED for resource: aws_vpc.this
+	File: /vpc.tf:1-9
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-logging-policies/logging-9-enable-vpc-flow-logging
+
+		1 | resource "aws_vpc" "this" {
+		2 |   cidr_block           = local.vpc_cidr
+		3 |   enable_dns_support   = true
+		4 |   enable_dns_hostnames = true
+		5 | 
+		6 |   tags = {
+		7 |     Name = local.name_prefix
+		8 |   }
+		9 | }
+
+Check: CKV2_AWS_12: "Ensure the default security group of every VPC restricts all traffic"
+	FAILED for resource: aws_vpc.this
+	File: /vpc.tf:1-9
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/networking-4
+
+		1 | resource "aws_vpc" "this" {
+		2 |   cidr_block           = local.vpc_cidr
+		3 |   enable_dns_support   = true
+		4 |   enable_dns_hostnames = true
+		5 | 
+		6 |   tags = {
+		7 |     Name = local.name_prefix
+		8 |   }
+		9 | }
+
+Check: CKV2_AWS_19: "Ensure that all EIP addresses allocated to a VPC are attached to EC2 instances"
+	FAILED for resource: aws_eip.nat
+	File: /natgw.tf:1-7
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-that-all-eip-addresses-allocated-to-a-vpc-are-attached-to-ec2-instances
+
+		1 | resource "aws_eip" "nat" {
+		2 |   depends_on = [aws_internet_gateway.this]
+		3 | 
+		4 |   tags = {
+		5 |     Name = "${local.name_prefix}-natgw"
+		6 |   }
+		7 | }
+
+
