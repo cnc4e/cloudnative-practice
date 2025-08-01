@@ -11,6 +11,7 @@
   - ポリシーチェック
     - Checkovによるポリシーチェック
     - CheckovによるポリシーチェックをCIに組み込む
+    - kyvernoによるK8sのポリシー制御
   - CI/CDの活用
     - AtlantisによるPRベースのterraform plan/apply
     - GitHub Actionsによる定期的なドリフトチェック
