@@ -1,0 +1,20 @@
+---
+metadata:
+  id: "CUSTOM_AWS_PROVIDER_CHECK"
+  name: "Check the tags and regions"
+  category: "CONVENTION"
+scope:
+  provider: "AWS"
+definition:
+  and:
+  - cond_type: "attribute"
+    resource_types:
+      - "provider"
+    attribute: "default_tags.tags.owner"
+    operator: exists
+  - cond_type: "attribute"
+    resource_types:
+      - "provider"
+    attribute: "region"
+    operator: "equals"
+    value: "ap-northeast-2"

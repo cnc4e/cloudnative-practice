@@ -1,0 +1,43 @@
+name: Checkov Security Scan
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  checkov:
+    runs-on: ubuntu-latest
+    name: checkov-action
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed Terraform directories
+        id: changed-dirs
+        run: |
+          # Get changed .tf files in the PR
+          changed_files=$(git diff --name-only origin/main...HEAD | grep '\.tf$' || true)
+          
+          if [ -z "$changed_files" ]; then
+            echo "No Terraform files changed"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Extract unique directories containing .tf files
+          directories=$(echo "$changed_files" | xargs dirname | sort -u | tr '\n' ',' | sed 's/,$//')
+          echo "directories=$directories" >> $GITHUB_OUTPUT
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          echo "Changed Terraform directories: $directories"
+
+      - name: Run Checkov action
+        if: steps.changed-dirs.outputs.has_changes == 'true'
+        id: checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: ${{ steps.changed-dirs.outputs.directories }}
+          framework: terraform
+          check: CUSTOM_*
+          external_checks_dirs: ./example/checkov/
