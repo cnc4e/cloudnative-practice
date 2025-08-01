@@ -22,8 +22,7 @@ provider "aws" {
   default_tags {
     tags = {
       project = "cn-practice",
-      owner   = "mori",
-      test    = "checkov"
+      owner   = "mori"
     }
   }
 }

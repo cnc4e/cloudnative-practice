@@ -97,7 +97,6 @@ issues:
       このプラクティスは余裕がなければやらなくてもいいです。
 
       - 対象ディレクトリをハードコードではなく変更のあったTerraformディレクトリにする
-      - チェック結果をPRのコメントに表示する
 
   - title: AtlantisによるPRベースのterraform plan/apply
     body: |
