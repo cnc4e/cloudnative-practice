@@ -3,8 +3,6 @@ name: Checkov Security Scan
 on:
   pull_request:
     branches: [ main ]
-  push:
-    branches: [ 41-static-analysis ]
 
 jobs:
   checkov:
@@ -24,7 +22,7 @@ jobs:
           # Scan Kubernetes manifests in codes/*/k8s/ directories
           # Use custom policies from codes/checkov/
           check: CKV_AWS_*
-          external_checks_dirs: ./example/checkov
+          external_checks_dirs: ./example/checkov/
           output_format: sarif
           output_file_path: reports/results.sarif
           download_external_modules: true
