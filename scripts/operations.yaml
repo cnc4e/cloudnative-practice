@@ -38,12 +38,16 @@ issues:
       # プラクティス
       
       ## 基本的なCheckovスキャン
+      - checkovをローカル端末にインストール
       - カスタムポリシーを定義し、プロジェクトのルールを自動検査
       - 今回はあえてチェックに`失敗`するようなポリシーを定義（作成したポリシーを別のissueで使います。）
         - codes/checkovディレクトリを作成
         - ディレクトリ内にカスタムポリシーのYAMLを作成
-          - TerraformのAWSプロバイダーにdefault_regionが`us-west-1`である事を確認するポリシー例
+          - ポリシーのIDは`CUSTOM_AWS_PROVIDER_CHECK`にする
+          - TerraformのAWSプロバイダーにdefault_regionが`us-west-1`である事を確認
       - 作成したポリシーを使いcheckovを実行しカスタムポリシーの確認結果が`FAILED`になることを確認
+        - 対象は`codes/actions/terraform`ディレクトリなど任意
+        - `--chekc "CUSTOM_*"`を付けるとカスタムポリシーのみチェックできる
   - title: CheckovによるポリシーチェックをCIに組み込む
     body: |
       CI/CDパイプラインにポリシーチェックを統合することで、開発者が変更をプッシュする度に自動的にセキュリティとコンプライアンスの検証を行い、問題のあるコードが本番環境にデプロイされることを防げます。
@@ -70,20 +74,30 @@ issues:
 
       # プラクティス
 
+      ## 前提
+
+      - checkovによるポリシーチェック のissueを完了していること
+
       ## CI統合のためのワークフロー作成
       - `.github/workflows/`ディレクトリに`checkov.yml`ワークフローファイルを作成
-      - プルリクエストをトリガーとしてCheckovスキャンを実行する設定
-      - 以下の要件を満たすワークフローを作成：
-        - `pull_request`および`push` (mainブランチ)でトリガー
-        - Terraformファイル（`codes/`ディレクトリ）をスキャン
-        - Kubernetesマニフェスト（`codes/*/k8s/`ディレクトリ）をスキャン
+      - mainへのプルリクエストをトリガーとしてワークフローを実行
+      - [checkov-action](https://github.com/bridgecrewio/checkov-action)を参考にcheckovを実行
+        - Terraformディレクトリ（`codes/actions/terraform`等）をスキャン
+        - フレームワークは`terraform`
         - カスタムポリシー（`codes/checkov/`）を使用
-        - 結果をプルリクエストコメントまたはチェック結果に表示
+        - チェックは`CUSTOM_*`のみ
 
       ## ワークフローのテスト
-      - 新しいブランチを作成し、故意にポリシー違反のあるTerraformコードを追加
-      - プルリクエストを作成し、Checkovワークフローが自動実行されることを確認
-      - ワークフローの実行結果とプルリクエストへのフィードバックを確認
+      - 作業ブランチをリモートにプッシュしPRを作成
+      - GitHub Actionsでチェックが自動で行われ**失敗**することを確認
+      - `codes/checkov`配下のポリシーを修正しリモートに再プッシュ
+      - GitHub Actionsでチェックが自動で行われ**成功**することを確認
+
+      ## 更に発展的なプラクティス
+      このプラクティスは余裕がなければやらなくてもいいです。
+
+      - 対象ディレクトリをハードコードではなく変更のあったTerraformディレクトリにする
+      - チェック結果をPRのコメントに表示する
 
   - title: AtlantisによるPRベースのterraform plan/apply
     body: |

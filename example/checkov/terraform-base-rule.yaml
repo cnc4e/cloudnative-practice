@@ -17,4 +17,4 @@ definition:
       - "provider"
     attribute: "region"
     operator: "equals"
-    value: "ap-northeast-1"
+    value: "ap-northeast-2"
