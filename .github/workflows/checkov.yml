@@ -21,8 +21,8 @@ jobs:
           # Scan Terraform files in codes/ directory
           # Scan Kubernetes manifests in codes/*/k8s/ directories
           # Use custom policies from codes/checkov/
-          check: CKV_AWS_*
-          external_checks_dirs: ../../checkov/
+          check: CUSTOM_*
+          external_checks_dirs: ./example/checkov/
           output_format: sarif
           output_file_path: reports/results.sarif
           download_external_modules: true

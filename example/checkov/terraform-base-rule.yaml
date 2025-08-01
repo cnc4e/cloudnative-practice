@@ -1,6 +1,6 @@
 ---
 metadata:
-  id: "TERRAFORM_AWS_PROVIDER_CHECK"
+  id: "CUSTOM_AWS_PROVIDER_CHECK"
   name: "Check the tags and regions"
   category: "CONVENTION"
 scope:
