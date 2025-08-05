@@ -100,7 +100,56 @@ issues:
 
   - title: AtlantisによるPRベースのterraform plan/apply
     body: |
-      hoge
+      Pull Requestベースでのインフラ管理により、レビュープロセスを通じてインフラストラクチャの変更を制御し、変更内容の可視化とガバナンスを強化できます。Atlantisを使用することで、GitOpsワークフローを実現し、Pull Request上で直接terraform planの結果を確認し、レビュー後にterraform applyを実行できます。
+
+      # PRベースインフラ管理の必要性
+      - Terraformの実行が個人のローカル環境に依存し、状態管理や権限管理が困難
+      - インフラ変更のレビュープロセスが不十分で、予期しない変更が本番環境に反映されるリスク
+      - 複数人でのインフラ管理において、実行履歴の追跡と変更の透明性が不足
+      - ローカル環境での実行により、一貫性のない実行環境とコンフィグレーションの問題
+      
+      # 解決策
+      - **Atlantis**: GitHubとの統合が優れており、PRコメントでの操作が直感的（本プラクティス採用）
+      - **Terraform Cloud**: HashiCorpの公式サービス、リモート実行とstate管理が統合
+      - **GitHub Actions**: 自前でワークフローを構築、カスタマイズ性が高い
+      - **GitLab CI**: GitLab利用時の選択肢、統合開発環境として利用可能
+      
+      本プラクティスではGitHub Pull Requestとの親和性が高く、コメントベースでの直感的な操作が可能なAtlantisを採用します。
+
+      # Atlantisによる GitOps ワークフロー
+      - Pull Request作成時に自動的にterraform planを実行
+      - plan結果をPRコメントに表示し、変更内容を事前に確認可能
+      - レビュー承認後、コメントによりterraform applyを実行
+      - 実行ログとstate管理を一元化し、トレーサビリティを確保
+
+      ## Atlantisの主要機能
+      - **自動plan実行**: PR作成/更新時の自動terraform plan実行
+      - **PRコメント統合**: planとapplyをPRコメントから実行
+      - **ポリシーチェック**: Conftest等によるOPAポリシー適用
+      - **並列実行制御**: 同時実行の制限とロック機能
+
+      # プラクティス
+
+      ## Atlantisサーバーの構築
+      - `codes/atlantis/`ディレクトリを作成し、AtlantisのEKSデプロイメント用マニフェストを作成
+        - Deployment、Service、IngressまたはLoadBalancer設定
+        - GitHub App認証情報の設定（Secret）
+        - Atlantis設定ファイル（`atlantis.yaml`）の作成
+      - EKSクラスターにAtlantisをデプロイ
+
+      ## GitHub認証情報の設定
+      - [Git Host Access Credentials | Atlantis](https://www.runatlantis.io/docs/access-credentials.html)
+        - GitHubユーザーのPATまたはGitHub Appを使用（ARCで作成した認証情報を使いまわしてもいい）
+
+      ## リポジトリ設定とワークフロー確認
+      - リポジトリルートに`atlantis.yaml`設定ファイルを配置
+        - Terraformディレクトリのpattern指定
+        - plan/applyの実行コマンド設定
+        - 事前・事後実行フックの設定（Checkovスキャン等）
+      - テスト用のTerraform変更でPull Requestを作成
+      - 自動plan実行とPRコメント表示の確認
+      - レビュー後の手動apply実行とstate更新の確認
+
   - title: GitHub Actionsによる定期的なドリフトチェック
     body: |
       hoge
