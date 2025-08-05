@@ -2,6 +2,14 @@
 
 コードはeksの下
 
+# IngressClassを作成しておく
+
+コードはeksの下
+
+# webhook secretを作成しておく
+
+適当な24文字より長い文字列を作成しておく。
+
 # Atlantisのデプロイ
 
 https://www.runatlantis.io/docs/deployment.html#kubernetes-helm-chart
@@ -36,7 +44,7 @@ values.yamlを編集して、必要な設定を行います。
 helm install atlantis runatlantis/atlantis -f values.yaml \
   --set github.user=mouriryouta \
   --set github.token=YOURPAT \
-  --set github.secret=dummy
+  --set github.secret=YOURWEBHOOKSECRET
 ```
 
 podがrunningする。
