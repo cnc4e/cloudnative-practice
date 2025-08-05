@@ -32,7 +32,10 @@ resource "aws_s3_bucket_policy" "this" {
         ]
         Condition = {
           StringNotEquals = {
-            "aws:PrincipalArn" = data.aws_caller_identity.current.arn
+            "aws:PrincipalArn" = [
+              data.aws_caller_identity.current.arn,
+              "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/cn-practice-atlantis-role"
+            ]
           }
         }
       }
@@ -72,7 +75,10 @@ resource "aws_dynamodb_resource_policy" "this" {
         Resource = aws_dynamodb_table.this.arn
         Condition = {
           StringNotEquals = {
-            "aws:PrincipalArn" = data.aws_caller_identity.current.arn
+            "aws:PrincipalArn" = [
+              data.aws_caller_identity.current.arn,
+              "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/cn-practice-atlantis-role"
+            ]
           }
         }
       }
