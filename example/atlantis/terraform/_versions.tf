@@ -9,11 +9,11 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "cn-practice-tfstate"
-    key            = "atlantis.tfstate"
-    region         = "ap-northeast-2"
-    dynamodb_table = "cn-practice-tfstate"
-    encrypt        = true
+    bucket       = "cn-practice-tfstate"
+    key          = "atlantis.tfstate"
+    region       = "ap-northeast-2"
+    use_lockfile = true
+    encrypt      = true
   }
 }
 
