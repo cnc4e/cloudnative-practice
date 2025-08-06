@@ -10,7 +10,7 @@ terraform {
 
   backend "s3" {
     bucket       = "cn-practice-tfstate"
-    key          = "tfbackend.tfstate"
+    key          = "atlantis.tfstate"
     region       = "ap-northeast-2"
     use_lockfile = true
     encrypt      = true
@@ -26,4 +26,3 @@ provider "aws" {
     }
   }
 }
-
