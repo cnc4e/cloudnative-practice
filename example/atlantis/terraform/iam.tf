@@ -17,10 +17,6 @@ data "aws_iam_policy_document" "assume_role" {
 resource "aws_iam_role" "atlantis" {
   name               = "${local.name_prefix}-atlantis-role"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
-
-  tags = {
-    test = "atlantis-1"
-  }
 }
 
 resource "aws_iam_role_policy_attachment" "atlantis_admin" {

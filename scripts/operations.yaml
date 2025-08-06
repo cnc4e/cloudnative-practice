@@ -130,25 +130,20 @@ issues:
 
       # プラクティス
 
+      ## 前提
+      - StorageClassを作成してある
+      - IngressClassを作成してある
+
       ## Atlantisサーバーの構築
-      - `codes/atlantis/`ディレクトリを作成し、AtlantisのEKSデプロイメント用マニフェストを作成
-        - Deployment、Service、IngressまたはLoadBalancer設定
-        - GitHub App認証情報の設定（Secret）
-        - Atlantis設定ファイル（`atlantis.yaml`）の作成
-      - EKSクラスターにAtlantisをデプロイ
+      - 公式のドキュメントを参考にAtlantisをKubernetesにデプロイ
+        - [Installation Guide | Atlantis](https://www.runatlantis.io/docs/installation-guide.html)
+        - 認証情報はARCで作ったPATを使用。**認証情報はGitに含めない**ように注意
+        - AtlantisのAWSクレデンシャルはPod IdentityでIAMロールを付与
+          - AtlantisのIAMロールからtfbackendへアクセスする。S3のリソースベースポリシーでIAMロールの制限をしている場合、Atlantis用のIAMロールを追加する
 
-      ## GitHub認証情報の設定
-      - [Git Host Access Credentials | Atlantis](https://www.runatlantis.io/docs/access-credentials.html)
-        - GitHubユーザーのPATまたはGitHub Appを使用（ARCで作成した認証情報を使いまわしてもいい）
-
-      ## リポジトリ設定とワークフロー確認
-      - リポジトリルートに`atlantis.yaml`設定ファイルを配置
-        - Terraformディレクトリのpattern指定
-        - plan/applyの実行コマンド設定
-        - 事前・事後実行フックの設定（Checkovスキャン等）
-      - テスト用のTerraform変更でPull Requestを作成
-      - 自動plan実行とPRコメント表示の確認
-      - レビュー後の手動apply実行とstate更新の確認
+      ## 動作確認
+      - Terraformのコードを修正したコミットをプッシュし、PRを作成する
+      - Atlantisにより自動でplanが実行され結果がPRにコメントされることを確認する
 
   - title: GitHub Actionsによる定期的なドリフトチェック
     body: |
