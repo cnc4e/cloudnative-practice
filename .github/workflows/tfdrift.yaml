@@ -43,12 +43,28 @@ jobs:
         id: plan
         run: |
           cd example/actions/terraform
-          terraform plan -detailed-exitcode
+          terraform plan -detailed-exitcode -no-color > /tmp/plan_output.txt 2>&1 || echo "exit_code=$?" >> $GITHUB_OUTPUT
+          cat /tmp/plan_output.txt
 
       - name: Send SNS Notification on Plan Failure
         if: ${{ failure() }}
         run: |
+          PLAN_OUTPUT=$(cat /tmp/plan_output.txt | head -50)
+          
           aws sns publish \
             --topic-arn "arn:aws:sns:ap-northeast-2:456247443832:cn-practice-drift-notification" \
             --subject "Terraform Plan Failed - Drift Detection" \
-            --message "Terraform plan failed during drift detection. Please check the GitHub Actions logs for details. Workflow: ${{ github.workflow }}, Run ID: ${{ github.run_id }}"
+            --message "$(cat <<EOF
+          Terraform plan failed during drift detection.
+          
+          Workflow: ${{ github.workflow }}
+          Run ID: ${{ github.run_id }}
+          Repository: ${{ github.repository }}
+          Branch: ${{ github.ref_name }}
+          
+          Plan Output (first 50 lines):
+          ${PLAN_OUTPUT}
+          
+          Full logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+          )"
