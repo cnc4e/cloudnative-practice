@@ -37,6 +37,7 @@ jobs:
           cd example/actions/terraform
           terraform plan -detailed-exitcode -input=false
           EXIT_CODE=$?
+          echo "DEBUG: Terraform plan exit code: $EXIT_CODE"
           echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
         continue-on-error: true
 
