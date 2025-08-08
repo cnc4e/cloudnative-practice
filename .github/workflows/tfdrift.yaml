@@ -43,8 +43,12 @@ jobs:
         id: plan
         run: |
           cd example/actions/terraform
-          terraform plan -detailed-exitcode -no-color > /tmp/plan_output.txt 2>&1 || echo "exit_code=$?" >> $GITHUB_OUTPUT
+          set +e
+          terraform plan -detailed-exitcode -no-color > /tmp/plan_output.txt 2>&1
+          PLAN_EXIT_CODE=$?
           cat /tmp/plan_output.txt
+          echo "exit_code=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
+          exit $PLAN_EXIT_CODE
 
       - name: Send SNS Notification on Plan Failure
         if: ${{ failure() }}
