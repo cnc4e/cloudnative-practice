@@ -35,11 +35,12 @@ jobs:
         id: plan
         run: |
           cd example/actions/terraform
+          set +e  # エラーで停止しないようにする
           terraform plan -detailed-exitcode -input=false
           EXIT_CODE=$?
           echo "DEBUG: Terraform plan exit code: $EXIT_CODE"
           echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
-        continue-on-error: true
+          set -e  # エラーで停止するように戻す
 
       - name: Send SNS Notification on Plan Failure
         if: steps.plan.outcome == 'failure'
