@@ -29,6 +29,31 @@ resource "aws_iam_role_policy_attachment" "actions_runner_aws_readonly" {
   policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
 }
 
+data "aws_iam_policy_document" "s3_access" {
+  statement {
+    effect = "Allow"
+    
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+      "s3:ListBucket"
+    ]
+    
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "s3_access" {
+  name   = "${local.name_prefix}-actions-runner-s3-policy"
+  policy = data.aws_iam_policy_document.s3_access.json
+}
+
+resource "aws_iam_role_policy_attachment" "actions_runner_s3_access" {
+  role       = aws_iam_role.actions_runner.name
+  policy_arn = aws_iam_policy.s3_access.arn
+}
+
 resource "aws_eks_pod_identity_association" "actions_runner" {
   cluster_name    = data.terraform_remote_state.eks.outputs.eks_cluster_name
   namespace       = local.namespace
