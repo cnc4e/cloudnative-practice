@@ -54,6 +54,6 @@ jobs:
         if: ${{ failure() }}
         run: |
           aws sns publish \
-            --topic-arn $(cd example/actions/terraform && terraform output -raw sns_topic_arn) \
+            --topic-arn "arn:aws:sns:ap-northeast-2:456247443832:cn-practice-drift-notification" \
             --subject "Terraform Plan Failed - Drift Detection" \
             --message "Terraform plan failed during drift detection. Please check the GitHub Actions logs for details. Workflow: ${{ github.workflow }}, Run ID: ${{ github.run_id }}"
