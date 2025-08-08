@@ -1,5 +1,9 @@
 resource "aws_sns_topic" "drift_notification" {
   name = "${local.name_prefix}-drift-notification"
+  
+  tags = {
+    Environment = "production"
+  }
 }
 
 resource "aws_sns_topic_subscription" "drift_notification_email" {
