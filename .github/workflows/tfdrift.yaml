@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: '0 3 * * *'  # 毎日03:00 JST（=18:00 UTC）
   workflow_dispatch:      # 手動実行も可能にする
+  push:
+    branches:
+      - '43-drift'        # テスト用に43-driftブランチでも実行
 
 jobs:
   drift-detection:
