@@ -35,13 +35,28 @@ jobs:
         id: plan
         run: |
           cd example/actions/terraform
-          terraform plan -detailed-exitcode -input=false
+          terraform plan -detailed-exitcode -input=false || echo "exit_code=$?" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Send SNS Notification on Plan Failure
+        if: steps.plan.outcome == 'failure'
+        run: |
+          aws sns publish \
+            --topic-arn $(cd example/actions/terraform && terraform output -raw sns_topic_arn) \
+            --subject "Terraform Plan Failed - Drift Detection" \
+            --message "Terraform plan failed during drift detection. Please check the GitHub Actions logs for details. Workflow: ${{ github.workflow }}, Run ID: ${{ github.run_id }}"
 
       - name: Check for Drift
-        if: steps.plan.outcome == 'success' && steps.plan.conclusion == 'success'
+        if: steps.plan.outcome == 'success'
         run: |
-          if [ $? -eq 2 ]; then
+          cd example/actions/terraform
+          EXIT_CODE=${{ steps.plan.outputs.exit_code }}
+          if [ "$EXIT_CODE" = "2" ]; then
             echo "Drift detected! Please review the plan."
+            aws sns publish \
+              --topic-arn $(terraform output -raw sns_topic_arn) \
+              --subject "Terraform Drift Detected" \
+              --message "Terraform configuration drift has been detected. Please review the plan and apply necessary changes. Workflow: ${{ github.workflow }}, Run ID: ${{ github.run_id }}"
             exit 1
           else
             echo "No drift detected."
