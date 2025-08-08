@@ -11,28 +11,16 @@ on:
 jobs:
   drift-detection:
     runs-on: arc-runner-set
+    container: hashicorp/terraform:latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          node-version: '18'
-
-      # - name: Install AWS CLI
-      #   run: |
-      #     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-      #     unzip awscliv2.zip
-      #     sudo ./aws/install
-      #     aws --version
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.11.3
-          terraform_wrapper: false
+          aws-region: ap-northeast-2
 
       - name: Terraform Init
         run: |
@@ -46,7 +34,6 @@ jobs:
           terraform plan -detailed-exitcode
 
       - name: Send SNS Notification on Plan Failure
-        uses: aws-actions/configure-aws-credentials@v1
         if: ${{ failure() }}
         run: |
           aws sns publish \
