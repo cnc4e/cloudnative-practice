@@ -1,0 +1,40 @@
+name: Terraform Drift Detection
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # 毎日03:00 JST（=18:00 UTC）
+  workflow_dispatch:      # 手動実行も可能にする
+
+jobs:
+  drift-detection:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.11.3
+
+      - name: Terraform Init
+        run: |
+          cd example/actions/terraform
+          terraform init -input=false
+
+      - name: Terraform Plan (Drift Check)
+        id: plan
+        run: |
+          cd example/actions/terraform
+          terraform plan -detailed-exitcode -input=false
+
+      - name: Check for Drift
+        if: steps.plan.outcome == 'success' && steps.plan.conclusion == 'success'
+        run: |
+          if [ $? -eq 2 ]; then
+            echo "Drift detected! Please review the plan."
+            exit 1
+          else
+            echo "No drift detected."
+          fi
