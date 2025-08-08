@@ -34,11 +34,6 @@ jobs:
           terraform_version: 1.11.3
           terraform_wrapper: false
 
-      - name: AWS CLI
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-region: ap-northeast-2
-
       - name: Terraform Init
         run: |
           cd example/actions/terraform
@@ -51,6 +46,7 @@ jobs:
           terraform plan -detailed-exitcode
 
       - name: Send SNS Notification on Plan Failure
+        uses: aws-actions/configure-aws-credentials@v1
         if: ${{ failure() }}
         run: |
           aws sns publish \
