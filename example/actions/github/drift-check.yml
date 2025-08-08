@@ -1,0 +1,74 @@
+name: Terraform Drift Detection
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # 毎日03:00 JST（=18:00 UTC）
+  workflow_dispatch:      # 手動実行も可能にする
+  push:
+    branches:
+      - '43-drift'        # テスト用に43-driftブランチでも実行
+
+jobs:
+  drift-detection:
+    runs-on: arc-runner-set
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+          aws --version
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.11.3
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: |
+          cd example/actions/terraform
+          terraform init -input=false
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          cd example/actions/terraform
+          set +e
+          terraform plan -detailed-exitcode -no-color > /tmp/plan_output.txt 2>&1
+          PLAN_EXIT_CODE=$?
+          cat /tmp/plan_output.txt
+          echo "exit_code=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
+          exit $PLAN_EXIT_CODE
+
+      - name: Send SNS Notification on Plan Failure
+        if: ${{ failure() }}
+        run: |
+          PLAN_OUTPUT=$(cat /tmp/plan_output.txt | head -50)
+          
+          aws sns publish \
+            --topic-arn "arn:aws:sns:ap-northeast-2:456247443832:cn-practice-drift-notification" \
+            --subject "Terraform Plan Failed - Drift Detection" \
+            --message "$(cat <<EOF
+          Terraform plan failed during drift detection.
+          
+          Workflow: ${{ github.workflow }}
+          Run ID: ${{ github.run_id }}
+          Repository: ${{ github.repository }}
+          Branch: ${{ github.ref_name }}
+          
+          Plan Output (first 50 lines):
+          ${PLAN_OUTPUT}
+          
+          Full logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+          )"

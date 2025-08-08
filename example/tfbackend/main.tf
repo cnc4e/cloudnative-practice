@@ -33,8 +33,9 @@ resource "aws_s3_bucket_policy" "this" {
         Condition = {
           StringNotEquals = {
             "aws:PrincipalArn" = [
-              data.aws_caller_identity.current.arn,
-              "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/cn-practice-atlantis-role"
+              "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/mori",
+              "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/cn-practice-actions-runner-role",
+              "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/cn-practice-atlantis-role",
             ]
           }
         }
@@ -76,8 +77,9 @@ resource "aws_dynamodb_resource_policy" "this" {
         Condition = {
           StringNotEquals = {
             "aws:PrincipalArn" = [
-              data.aws_caller_identity.current.arn,
-              "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/cn-practice-atlantis-role"
+              "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/mori",
+              "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/cn-practice-actions-runner-role",
+              "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/cn-practice-atlantis-role",
             ]
           }
         }
