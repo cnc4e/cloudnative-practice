@@ -31,46 +31,16 @@ jobs:
           cd example/actions/terraform
           terraform init -input=false
 
-      - name: Terraform Plan (Drift Check)
+      - name: Terraform Plan
         id: plan
         run: |
           cd example/actions/terraform
-          echo "DEBUG: Terraform version: $(terraform version)"
-          echo "DEBUG: Testing terraform plan with detailed-exitcode"
-          set +e
-          terraform plan -detailed-exitcode -input=false
-          EXIT_CODE=$?
-          echo "DEBUG: Terraform plan exit code: $EXIT_CODE"
-          echo "DEBUG: Testing exit codes manually..."
-          if terraform plan -detailed-exitcode -input=false > /dev/null 2>&1; then
-            echo "DEBUG: terraform plan succeeded (exit 0)"
-          else
-            MANUAL_EXIT=$?
-            echo "DEBUG: terraform plan failed with exit code: $MANUAL_EXIT"
-          fi
-          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
-          set -e
+          terraform plan -detailed-exitcode
 
       - name: Send SNS Notification on Plan Failure
-        if: steps.plan.outcome == 'failure'
+        if: ${{ failure() }}
         run: |
           aws sns publish \
             --topic-arn $(cd example/actions/terraform && terraform output -raw sns_topic_arn) \
             --subject "Terraform Plan Failed - Drift Detection" \
             --message "Terraform plan failed during drift detection. Please check the GitHub Actions logs for details. Workflow: ${{ github.workflow }}, Run ID: ${{ github.run_id }}"
-
-      - name: Check for Drift
-        if: steps.plan.outcome == 'success'
-        run: |
-          cd example/actions/terraform
-          EXIT_CODE=${{ steps.plan.outputs.exit_code }}
-          if [ "$EXIT_CODE" = "2" ]; then
-            echo "Drift detected! Please review the plan."
-            aws sns publish \
-              --topic-arn $(terraform output -raw sns_topic_arn) \
-              --subject "Terraform Drift Detected" \
-              --message "Terraform configuration drift has been detected. Please review the plan and apply necessary changes. Workflow: ${{ github.workflow }}, Run ID: ${{ github.run_id }}"
-            exit 1
-          else
-            echo "No drift detected."
-          fi
