@@ -243,6 +243,59 @@ issues:
       3. **開発・コミット** - Issue番号を含むコミットメッセージで作業
       4. **プルリクエスト** - mainブランチへのマージリクエスト作成
       5. **レビュー・マージ** - コードレビュー後にmainブランチへマージ
+  - title: リポジトリ設定
+    body: |
+      プロジェクトの品質とセキュリティを維持するため、GitHubリポジトリの適切な設定により、コードの保護、レビュープロセスの強制、自動化されたチェックの実行を確保することが重要です。
+
+      # リポジトリ設定の必要性
+      - mainブランチへの直接プッシュにより、テストやレビューを経ずに問題のあるコードが反映されるリスク
+      - プルリクエストでの必須チェック（テスト、セキュリティスキャン、ポリシーチェック）の未実施
+      - 管理者権限の不適切な付与により、保護設定が回避される可能性
+      - コードレビューの省略による品質低下とセキュリティ脆弱性の見逃し
+      
+      # 解決策
+      - **保護されたブランチ (Branch Protection Rules)**: 従来の機能、ブランチ単位での保護設定、設定が簡単で広く使用されている
+      - **ルールセット (Repository Rulesets)**: 新しい機能、より柔軟で統合的なリポジトリルール管理、複数ブランチやタグに対する統一ルール適用が可能（本プラクティス採用）
+      
+      本プラクティスでは新しいルールセット機能を使用し、より柔軟で包括的なリポジトリの保護設定を行います。
+
+      # ルールセットによるリポジトリ保護
+      
+      [ルールセット](https://docs.github.com/ja/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets)は、従来の保護されたブランチ機能を拡張し、より柔軟で包括的なリポジトリルール管理を提供します。
+      
+      ## ルールセットの主要機能
+
+      - [Available rules for rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets)。以下一部抜粋
+        - **Require a pull request before merging**: プルリクエストでの必須レビューと承認者数の設定
+        - **Require status checks to pass before merging**: CI/CDチェックの成功を必須条件に設定
+        - **Block force pushes**: 強制プッシュの禁止
+        - **Restrict deletions**: ブランチ削除の制限
+
+      # プラクティス
+      
+      ルールセットを設定してリポジトリを保護します。
+      ルールセットを作成する際は ArgoCD ImageUpdate の認証方法に応じて設定を行います。
+
+      - PAT & GitHub Apps 認証の場合
+        - リポジトリの削除を防ぐルールを設定
+          - ルールセット名: `main-branch-delete-protection`
+          - Enforcement status: `Active`に設定
+          - Bypass list: `Repository admin`を指定
+          - 対象ブランチ: `main`ブランチを指定
+          - 以下のルールを有効化
+            - "Restrict deletions"
+      - GitHub Apps認証の場合のみ（バイパスを設定しないとArgoCD ImageUpdaterによる自動更新ができなくなるため）
+        - リポジトリの削除・mainブランチへの直接プッシュを防ぐルールを設定
+          - ルールセット名: `main-branch-push-protection`
+          - Enforcement status: `Active`に設定
+          - Bypass list: ArgoCDで使用したGitHub Appsを指定
+          - 対象ブランチ: `main`ブランチを指定
+          - 以下のルールを有効化
+            - "Restrict deletions"
+            - "Block force pushes"
+            - "Require a pull request before merging"
+              - Required approvals: 1
+              - "Dismiss stale pull request reviews when new commits are pushed"を有効化
 
   - title: モジュール化
     body: |
