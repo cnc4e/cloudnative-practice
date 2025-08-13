@@ -380,6 +380,94 @@ issues:
       - terraform.workspace変数による環境固有設定の制御
       - シンプルな環境切り替えと軽量な環境管理手法
 
+  - title: K8sマニフェスト構成管理
+    body: |
+      **本issueは内容を確認するだけでクローズしてください。**
+
+      Kubernetesアプリケーションが成長するにつれて、マニフェストファイルの数が増加し、管理が複雑になります。適切な構成管理により、保守性、可読性、再利用性を向上させ、チーム開発での効率的なKubernetesアプリケーション管理を実現できます。
+
+      # K8sマニフェスト構成管理の必要性
+      - 単一ファイルでの大量リソース定義により、可読性と保守性が著しく低下
+      - 環境間（dev、staging、prod）でのマニフェスト差異の管理が複雑化
+      - アプリケーション別、機能別のリソースが混在し、影響範囲の把握が困難
+      - 同じような設定の重複によるメンテナンスコストの増大
+
+      # 解決策
+      - **ディレクトリ分割**: アプリケーション・機能別にファイルを分離、シンプルで理解しやすい、小規模〜中規模に適している（本プロジェクト採用）
+      - **Kustomize**: ベースマニフェストから環境別の差分を管理、YAML重複を削減、Kubernetesネイティブツール
+      - **Helm**: テンプレート化による高度な抽象化、複雑な設定管理が可能、大規模プロジェクトに適している
+      - **ArgoCD ApplicationSets**: 複数環境への一括デプロイ、GitOpsパターンでの一元管理
+
+      本プロジェクトでは初心者でもわかりやすいディレクトリ分割のアプローチを採用しています。
+
+      # ディレクトリ分割アプローチ
+      - アプリケーションや機能に基づくファイル分離
+      - 環境別の設定値は同一ファイル内で管理
+      - リソース種別ごとのファイル分割により、変更影響範囲を限定
+
+      ## 基本的なディレクトリ構成（アプリケーション軸）
+      - 各アプリケーション（フロントエンド、バックエンド）ごとにディレクトリを分割
+      - リソース種別ごとにファイルを分離し、管理しやすい構成にする
+
+      ```
+      codes/
+      ├── backend/
+      │   ├── k8s/
+      │   │   ├── deployment.yaml    # Deployment定義
+      │   │   ├── service.yaml       # Service定義
+      │   │   ├── configmap.yaml     # ConfigMap定義
+      │   │   └── ingress.yaml       # Ingress定義
+      │   └── app/                   # アプリケーションソースコード
+      └── frontend/
+          ├── k8s/
+          │   ├── deployment.yaml    # Deployment定義
+          │   ├── service.yaml       # Service定義
+          │   ├── configmap.yaml     # ConfigMap定義
+          │   └── ingress.yaml       # Ingress定義
+          └── app/                   # アプリケーションソースコード
+      ```
+
+      # Kustomizeアプローチ
+      - ベースマニフェストから環境別の差分（patch）を適用
+      - YAML重複を削減し、DRY原則に従った構成管理
+      - Kubernetesネイティブツールのため、追加ツールのインストール不要
+
+      ## Kustomize構成例
+      ```
+      codes/
+      ├── base/                     # 共通ベースマニフェスト
+      │   ├── deployment.yaml
+      │   ├── service.yaml
+      │   └── kustomization.yaml
+      └── overlays/                 # 環境別差分
+          ├── dev/
+          │   ├── kustomization.yaml
+          │   └── patch-replica.yaml
+          └── prod/
+              ├── kustomization.yaml
+              └── patch-replica.yaml
+      ```
+
+      # Helmアプローチ
+      - テンプレート化による高度な抽象化と動的設定生成
+      - values.yamlによる環境別設定管理
+      - Helm Chartの再利用性と配布可能性
+
+      ## Helm構成例
+      ```
+      codes/
+      └── helm-charts/
+          └── myapp/
+              ├── Chart.yaml          # Chart情報
+              ├── values.yaml         # デフォルト設定値
+              ├── values-dev.yaml     # 開発環境設定
+              ├── values-prod.yaml    # 本番環境設定
+              └── templates/          # テンプレートファイル
+                  ├── deployment.yaml
+                  ├── service.yaml
+                  └── ingress.yaml
+      ```
+
   - title: EKSクラスタのバージョンアップ
     body: |
       EKSクラスタは定期的に新しいKubernetesバージョンがリリースされ、セキュリティ修正や機能改善が提供されます。クラスタのバージョンを最新に保つことで、セキュリティの向上と新機能の活用が可能になります。
