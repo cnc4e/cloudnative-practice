@@ -29,3 +29,10 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 ```
 helm install -n argocd argocd-image-updater argo/argocd-image-updater
 ```
+
+# ArgoCDにKSOPSを追加
+
+```
+helm upgrade -n argocd argocd argo/argo-cd -f values.yaml
+```
+

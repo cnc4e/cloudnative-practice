@@ -19,7 +19,10 @@ resource "aws_kms_key" "sops" {
         Sid    = "Allow use of the key for SOPS operations",
         Effect = "Allow",
         Principal = {
-          AWS = data.aws_caller_identity.current.arn
+          AWS = [
+            data.aws_caller_identity.current.arn,
+            "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.name_prefix}-argo-repo-server-role"
+          ]
         },
         Action = [
           "kms:Encrypt",
