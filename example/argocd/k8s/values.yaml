@@ -1,8 +1,16 @@
 configs:
   cm:
-    kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
+    # kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
+    kustomize.buildOptions: "--enable-alpha-plugins"
 
 repoServer:
+  env:
+    - name: AWS_REGION
+      value: ap-northeast-2
+    - name: SOPS_KMS_ARN
+      value: arn:aws:kms:ap-northeast-2:456247443832:key/9cc09cd4-f4c5-4796-9a47-f53ff4482a93
+    - name: XDG_CONFIG_HOME
+      value: /.config
   volumes:
     - name: custom-tools
       emptyDir: {}
@@ -18,10 +26,28 @@ repoServer:
       volumeMounts:
         - mountPath: /custom-tools
           name: custom-tools
+    - name: install-sops
+      image: alpine/curl
+      command: ["/bin/sh", "-c"]
+      args:
+        - echo "Installing SOPS...";
+          curl -L https://github.com/getsops/sops/releases/download/v3.10.2/sops-v3.10.2.linux.amd64 -o sops;
+          chmod +x sops;
+          mv sops /custom-tools/;
+          echo "Done.";
+      volumeMounts:
+        - mountPath: /custom-tools
+          name: custom-tools
   volumeMounts:
     - mountPath: /usr/local/bin/kustomize
       name: custom-tools
       subPath: kustomize
-    - mountPath: /usr/local/bin/ksops
+    - mountPath: /.config/kustomize/plugin/viaduct.ai/v1/ksops/ksops
       name: custom-tools
       subPath: ksops
+    # - mountPath: /usr/local/bin/ksops
+    #   name: custom-tools
+    #   subPath: ksops
+    - mountPath: /usr/local/bin/sops
+      name: custom-tools
+      subPath: sops
