@@ -14,6 +14,7 @@ data "aws_iam_policy_document" "assume_role" {
   }
 }
 
+# ImageUpdater
 resource "aws_iam_role" "argocd_imageupdater" {
   name               = "${local.name_prefix}-argo-imageupdater-role"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
@@ -31,3 +32,37 @@ resource "aws_eks_pod_identity_association" "argocd_imageupdater" {
   role_arn        = aws_iam_role.argocd_imageupdater.arn
 }
 
+# RepoServer ksops
+resource "aws_iam_role" "argocd_repo_server" {
+  name               = "${local.name_prefix}-argo-repo-server-role"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
+
+data "aws_iam_policy_document" "argocd_repo_server_kms" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey"
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "argocd_repo_server_kms" {
+  name        = "${local.name_prefix}-argo-repo-server-kms-policy"
+  description = "Policy for ArgoCD repo server to decrypt SOPS encrypted secrets"
+  policy      = data.aws_iam_policy_document.argocd_repo_server_kms.json
+}
+
+resource "aws_iam_role_policy_attachment" "argocd_repo_server_kms" {
+  role       = aws_iam_role.argocd_repo_server.name
+  policy_arn = aws_iam_policy.argocd_repo_server_kms.arn
+}
+
+resource "aws_eks_pod_identity_association" "argocd_repo_server" {
+  cluster_name    = data.terraform_remote_state.eks.outputs.eks_cluster_name
+  namespace       = local.namespace
+  service_account = "argocd-repo-server"
+  role_arn        = aws_iam_role.argocd_repo_server.arn
+}
