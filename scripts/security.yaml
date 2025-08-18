@@ -849,6 +849,80 @@ issues:
       - SOPSを使用したSecret暗号化の実装
         - 適当なKey/ValueをもったSecretのマニフェストを作成
         - SOPSを使用してSecretマニフェストを暗号化（デプロイはしなくていいです）
+
+  - title: ArgoCDにKSOPSを組み込む
+    body: |
+      ArgoCDにKSOPS（Kustomize SOPS）を組み込むことで、SOPS暗号化されたKubernetesのSecretリソースを安全にGitOpsワークフローで管理できます。暗号化された機密情報をGitリポジトリに保存しながら、ArgoCDが自動的に復号化してクラスタにデプロイできるようになります。
+
+      # 課題や必要性
+      - GitOpsワークフローでSecretを管理する際の機密性確保
+      - 暗号化されたSecretの自動復号化とデプロイ
+      - 開発・ステージング・本番環境での一貫したSecret管理
+      - CI/CDパイプラインでの手動復号化作業の削減
+
+      # 解決策
+      - KSOPS統合によるSOPS暗号化Secretの自動復号化
+        - ArgoCDのrepo-serverにKSOPSプラグインを組み込む
+        - SOPS暗号化されたYAMLファイルの透過的な復号化
+        - Kustomizeとの統合による柔軟な設定管理
+      - External Secrets Operatorによる外部シークレット管理
+      - Sealed Secretsによる暗号化Secret管理
+
+      本プラクティスではKSOPSを採用します。既存のSOPSワークフローを活用しつつ、ArgoCDとの統合により完全に自動化されたGitOpsワークフローを実現できるためです。
+
+      # 解決策の説明
+      KSOPSはKustomizeの機能を拡張するプラグインで、SOPS暗号化されたファイルを透過的に復号化します。
+
+      ## KSOPS の動作原理
+      - **Kustomize統合** - KustomizeのGenerator機能を使用してSOPS復号化を実行
+      - **透過的復号化** - ビルド時にSOPS暗号化ファイルを自動復号化
+      - **KMS統合** - AWS KMSキーを使用した暗号化・復号化
+      - **権限管理** - ArgoCDのサービスアカウントにKMSアクセス権限を付与
+
+      実装手順：
+      - SOPS暗号化されたSecretファイルをGitリポジトリに保存
+      - KustomizationでsecretGeneratorとしてKSOPSを設定
+      - ArgoCDのrepo-serverをKSOPS対応版にアップグレード
+      - Pod IdentityでArgoCDサービスアカウントにKMS権限を付与
+
+      # プラクティス
+      
+      - KSOPSをArgoCDに組み込む
+        - KSOPSに対応したArgoCDの設定
+          - [公式リポジトリ](https://github.com/viaduct-ai/kustomize-sops)を参考にArgoCDのrepo-serverをKSOPS対応版にアップグレード
+            - KSOPSだけでなくSOPSもインストールする
+            - ArgoCDのConfigmapを修正しKustomizeプライグインを有効化する
+        - Pod IdentityでArgoCDのrepo-serverにKMS権限を付与
+          - SAは`argocd-repo-server`
+          - 権限は`kms:DescribeKey`と`kms:Decrypt`が最低限ついていればいい
+        - KMSキーのリソースベースポリシーでArgoCDのrepo-serverからの操作を許可する
+        - SOPS暗号化Secretの作成とKustomization設定
+          - プロジェクトルートに`.sops.yaml`を作成し、KMSキーで暗号化する設定をする
+          - FrontendまたはBackendに任意のSecretマニフェストを作成してSOPSで暗号化
+          - kustomization.yamlでsecretGeneratorとしてKSOPSを設定
+            ```yaml
+            generators:
+            - ksops.yaml
+            ```
+          - ksops-generator.yamlを作成してSOPS暗号化ファイルを指定
+            ```yaml
+            apiVersion: viaduct.ai/v1
+            kind: ksops
+            metadata:
+              name: ksops
+              annotations:
+                config.kubernetes.io/function: |
+                    exec:
+                      # if the binary is in your PATH, you can do
+                      path: ksops
+                      # otherwise, path should be relative to manifest files, like
+                      # path: ../../../ksops
+            files:
+              - secret.yaml
+            ```
+      - 動作確認
+        - ブランチをプッシュしSOPSで暗号化されたマニフェストがArgoCDで復号化されデプロイされること
+          - 動作確認のためArgoCDのApplication設定で同期ブランチを作業ブランチに変えてもいい
   - title: Terraformにおける機密情報の管理
     body: |
       Terraformでは、機密情報を安全に管理するために注意が必要です。
