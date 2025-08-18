@@ -15,7 +15,6 @@ spec:
   source:
     path: ./example/frontend/k8s
     repoURL: https://github.com/moriryota62/cloudnative-practice
-    # targetRevision: main
-    targetRevision: 95-ksops-argocd
+    targetRevision: main
   syncPolicy:
     automated: {}
