@@ -1,0 +1,39 @@
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: system
+spec:
+  template:
+    metadata:
+      labels:
+        node-type: system
+        billing-team: my-team
+    spec:
+      nodeClassRef:
+        group: eks.amazonaws.com
+        kind: NodeClass
+        name: system
+
+      requirements:
+        - key: "eks.amazonaws.com/instance-category"
+          operator: In
+          values: ["c", "m", "r"]
+        - key: "eks.amazonaws.com/instance-cpu"
+          operator: In
+          values: ["2", "4", "8"]
+        - key: "topology.kubernetes.io/zone"
+          operator: In
+          values: ["ap-northeast-2a", "ap-northeast-2b"]
+        - key: "kubernetes.io/arch"
+          operator: In
+          values: ["amd64"]
+
+      # システムコンポーネント専用のtaint
+      taints:
+        - key: "system"
+          value: "true"
+          effect: NoSchedule
+
+  limits:
+    cpu: "100"
+    memory: 100Gi

@@ -1,0 +1,12 @@
+{
+  "tolerations": [
+      {
+        "key": "system",
+        "operator": "Exists",
+        "effect": "NoSchedule"
+      }
+  ],
+  "nodeSelector": {
+    "node-type": "system"
+  }
+}
