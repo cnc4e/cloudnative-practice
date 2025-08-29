@@ -52,3 +52,39 @@ issues:
       - `system`にPodをスケジュールする
         - `amazon-cloudwatch-observability-controller-manager`や`snapshot-controller`などのPodを`system`で動かす
           - EKSアドオンでデプロイしたものはアドオンの設定を変更する
+  - title: Ingressによる外部公開
+    body: |
+      K8sのワークロードを外部公開する方法としてIngressがあります。Ingressは動作を制御する Ingress Controller を介し、LBなどの外部リソースと連携してトラフィックをルーティングします。EKS AutoModeではAWS Load Balancer Controllerのインストールが不要で、EKS AutoModeが自動的にALBを作成・設定します。
+
+        # EKS AutoMode Ingressの概要
+        - EKS AutoModeはルーティングタスクを自動化し、アプリサーバーをインターネットに公開
+        - Ingressリソース作成時に自動的にALBが作成される
+        - IngressClassとIngressClassParamsを使用してALB設定をカスタマイズ
+        - 従来のAWS Load Balancer Controllerのインストールは不要
+
+        ## 必要なリソース構成
+        1. **IngressClassParams** - AWS固有の設定値（証明書、VPCサブネット等）を定義
+        2. **IngressClass** - EKS AutoModeをコントローラーとして指定
+        3. **Ingress** - HTTPパスとポートをクラスタワークロードに関連付け
+
+        ## EKS AutoModeの利点
+        - AWS Load Balancer Controllerの手動インストール・管理が不要
+        - ALBの自動作成・設定によるオペレーション負荷軽減
+        - Kubernetes標準のIngressリソースとAWS ELBサービスの統合
+        - セキュリティ設定やネットワーク設定の自動化
+
+        # プラクティス
+
+        FrontendをServiceタイプLoadBalancerによる公開からIngressによる公開に変更する。
+
+        - IngressClassParamsとIngressClassの作成
+          - `codes/eks/k8s`ディレクトリにIngress関連のマニフェストを作成 [参考](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/auto-configure-alb.html)
+            - IngressClassParams
+            - IngressClass
+        - Frontendリソースの作成
+          - ServiceリソースのタイプをClusterIPに変更
+          - Ingressリソースを定義してFrontendを外部公開
+        - 動作確認
+          - 上記リソースを全て作成後、Ingressリソースを確認しLBのDNS名を取得
+          - DNS名でWebブラウザからアクセス可能か確認
+            - Ingressが作成されてからALBが利用可能になるまで数分かかる場合がある

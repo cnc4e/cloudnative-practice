@@ -132,7 +132,7 @@ issues:
 
       ## 前提
       - StorageClassを作成してある
-      - IngressClassを作成してある
+      - IngressClassを作成してある (issue: クラスタ Ingressによる外部公開)
 
       ## Atlantisサーバーの構築
       - 公式のドキュメントを参考にAtlantisをKubernetesにデプロイ
