@@ -52,6 +52,68 @@ issues:
       - `system`にPodをスケジュールする
         - `amazon-cloudwatch-observability-controller-manager`や`snapshot-controller`などのPodを`system`で動かす
           - EKSアドオンでデプロイしたものはアドオンの設定を変更する
+  - title: StorageClassによる動的ボリューム作成
+    body: |
+      Kubernetesでステートフルなアプリケーションを動かす際、データの永続化が必要になります。EKS AutoModeでは、StorageClassを使用してEBSボリュームを動的に作成し、アプリケーションに自動的にアタッチできます。これにより、事前にボリュームを作成する必要がなく、必要に応じて自動的にストレージが提供されます。
+
+      # Dynamic Volume Provisioningの必要性
+      - ステートフルアプリケーション（データベース、ファイルストレージ等）でのデータ永続化
+      - 手動でのボリューム作成・管理の運用負荷軽減
+      - アプリケーションのスケーリングに合わせた自動的なストレージ拡張
+      - 暗号化やボリュームタイプなどの統一的なストレージポリシー適用
+
+      # 解決策
+      - Static Provisioning: 事前にPersistentVolumeを手動作成し、PersistentVolumeClaimでバインド
+      - Dynamic Provisioning: StorageClassを定義し、PersistentVolumeClaimの作成時に自動的にボリュームを作成
+
+      本プラクティスでは**Dynamic Provisioning**を採用します。運用負荷の軽減、一貫したボリューム設定の適用、オンデマンドでのストレージ提供が可能なためです。
+
+      # EKS AutoModeのDynamic Volume Provisioning
+      - EKS AutoModeでは`ebs.csi.eks.amazonaws.com`プロビジョナーを使用
+      - StorageClassでEBSボリュームの設定（タイプ、暗号化、IOPS等）を定義
+      - PersistentVolumeClaimが作成されると自動的にEBSボリュームが作成される
+      - `volumeBindingMode: WaitForFirstConsumer`でPodが起動するまでボリューム作成を遅延
+
+      ## StorageClassの基本設定
+      ```yaml
+      apiVersion: storage.k8s.io/v1
+      kind: StorageClass
+      metadata:
+        name: auto-ebs-sc
+        annotations:
+          storageclass.kubernetes.io/is-default-class: "true"
+      provisioner: ebs.csi.eks.amazonaws.com
+      volumeBindingMode: WaitForFirstConsumer
+      parameters:
+        type: gp3
+        encrypted: "true"
+      ```
+
+      [参考](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/create-storage-class.html)
+
+      ## ストレージの暗号化
+      - `encrypted: "true"`でEBSボリューム暗号化を有効化
+      - デフォルトでは`aws/ebs`マネージドキーを使用
+      - `kmsKeyId`パラメータでカスタマーマネージドキーも指定可能
+
+      # プラクティス
+
+      StorageClassを作成し、サンプルステートフルアプリケーションで動的ボリューム作成を確認する。
+
+      - StorageClassを作成する
+        - `codes/eks/k8s`ディレクトリにStorageClassマニフェストを作成
+        - プロビジョナーは`ebs.csi.eks.amazonaws.com`を指定
+        - gp3ボリュームタイプで暗号化を有効化
+        - デフォルトStorageClassとして設定
+      - サンプルアプリケーションをデプロイする
+        - `nginx`等のイメージを使ったDeploymentを作成
+        - PersistentVolumeClaimでストレージを要求
+        - Podでボリュームをマウントしてデータ永続化を確認
+      - 動作確認
+        - PVCが作成され、自動的にEBSボリュームが作成されることを確認
+        - Pod削除・再作成後もデータが永続化されていることを確認
+        - AWS ConsoleでEBSボリュームが暗号化されていることを確認
+
   - title: Ingressによる外部公開
     body: |
       K8sのワークロードを外部公開する方法としてIngressがあります。Ingressは動作を制御する Ingress Controller を介し、LBなどの外部リソースと連携してトラフィックをルーティングします。EKS AutoModeではAWS Load Balancer Controllerのインストールが不要で、EKS AutoModeが自動的にALBを作成・設定します。
