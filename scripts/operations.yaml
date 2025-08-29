@@ -131,7 +131,7 @@ issues:
       # プラクティス
 
       ## 前提
-      - StorageClassを作成してある
+      - StorageClassを作成してある（issue: クラスタ StorageClassによる動的ボリューム作成）
       - IngressClassを作成してある (issue: クラスタ Ingressによる外部公開)
 
       ## Atlantisサーバーの構築
