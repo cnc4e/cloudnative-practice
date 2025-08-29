@@ -4,10 +4,8 @@ metadata:
   name: frontend
   labels:
     app: frontend
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
   - port: 80
     targetPort: 8080
