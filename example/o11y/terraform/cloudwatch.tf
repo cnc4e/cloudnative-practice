@@ -1,3 +1,13 @@
+resource "aws_cloudwatch_log_group" "frontend_container_insights" {
+  name              = "/aws/containerinsights/${local.name_prefix}/frontend"
+  retention_in_days = 30
+}
+
+resource "aws_cloudwatch_log_group" "backend_container_insights" {
+  name              = "/aws/containerinsights/${local.name_prefix}/backend"
+  retention_in_days = 30
+}
+
 resource "aws_cloudwatch_metric_alarm" "frontend_replica_count" {
   alarm_name          = "${local.name_prefix}-frontend-replica-count"
   comparison_operator = "LessThanThreshold"
