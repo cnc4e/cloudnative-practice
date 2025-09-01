@@ -1,0 +1,51 @@
+issues:
+  - title: Container Insights のロググループを分割する
+    body: |
+      Container Insights が収集するログはデフォルトでは決まったロググループに集約されますが、ログの種類や用途に応じてロググループを分割することが推奨されます。
+
+      # ロググループ分割の必要性
+      - Container Insights はデフォルトで `/aws/containerinsights/<cluster-name>/application` という単一のロググループにPodログを出力する
+      - 大規模なクラスターでは大量のログが生成され、単一のロググループでは管理が困難になる
+      - ログの種類やリテンション期間を分けることで、コスト最適化が可能になる
+      - Pod、サービス別にログを分離することで、特定のコンポーネントの監視とトラブルシューティングが効率化される
+      
+      # 解決策
+      - CloudWatch Logs のロググループをあらかじめ作成する
+      - FluentBit の設定をカスタマイズして、ログを複数のロググループに分割する
+      
+      本プラクティスでは、2つの解決策を組み合わせ Container Insights のログを複数のロググループに分割し、効率的な管理とコスト最適化を実現します。
+
+      # Container Insights ロググループ分割の方法
+      
+      ## 1. 複数ロググループの作成
+      - Terraform を使用して複数のロググループを作成する
+      - 各ロググループに適切なリテンション期間を設定する
+      - 必要に応じて KMS 暗号化を有効にする
+      - タグを設定してコスト管理を効率化する
+      
+      ## 2. FluentBitの設定
+      - 種類別に出力先のロググループを設定する
+
+      # プラクティス
+      
+      - FrontendとBackendのログをそれぞれ専用のロググループに分割する
+        - AWSリソースの準備
+          - 以下名前のロググループを作成する
+            - `/aws/containerinsights/<cluster-name>/backend`
+            - `/aws/containerinsights/<cluster-name>/frontend`
+          - 各ロググループにログの有効期限として`30日`を設定する
+        - Container Insights(FluentBit)の設定
+          - クラスタに作成済の ConfigMap:fluent-bit-config を編集する
+            - ConfigMap内の`application-log.conf:`以下がアプリケーションログの設定箇所
+              - 既存の`[OUTPUT]`を参考にfrontendとbackendの出力設定をする
+                - `*frontend*`および`*backend*`に該当するログを指定
+                - ログの出力先としてそれぞれ作成したロググループを指定
+          - ConfigMapを修正したらFluentBitのDaemonSetをリスタート
+        - 動作確認
+          - frontend等にアクセスする
+          - アクセスした時のログがCloudWatchLogsに出力されていることを確認
+
+      # 更に発展的なプラクティス
+
+      - ConfigMapの設定変更をEKSアドオンのオプション設定で行う
+
