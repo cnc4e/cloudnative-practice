@@ -49,3 +49,71 @@ issues:
 
       - ConfigMapの設定変更をEKSアドオンのオプション設定で行う
 
+  - title: ログを構造化してメトリクス化
+    body: |
+      Nginxのアクセスログを構造化し、CloudWatch Logs Insightsでクエリしやすくし、さらにログベースのメトリクスを作成することで、アプリケーションの健全性を監視できます。
+
+      # ログ構造化とメトリクス化の必要性
+      - デフォルトのNginxアクセスログは非構造化されており、検索やフィルタリングが困難
+      - ログから重要な情報（レスポンス時間、エラー率、リクエスト数など）を抽出するのに時間がかかる
+      - アプリケーションの問題を早期に発見し、迅速に対応するためには構造化されたログとメトリクスが必要
+      - ログベースのメトリクスにより、詳細なアラートやダッシュボードを作成できる
+      
+      # 解決策
+      - アプリケーションのログをJSONで出力する
+      - FluentBitのパーサーを使用してログを構造化する
+      
+      本プラクティスでは、FrontendのNginxログをNginxパーサーを使い構造化し、ログベースのメトリクス監視を実現します。
+
+      # ログ構造化とメトリクス化の方法
+      
+      ## 1. FluentBitでのNginxログ処理
+      - nginx パーサーを使用してアクセスログを解析 [Configuring parsers](https://docs.fluentbit.io/manual/data-pipeline/parsers/configuring-parser)
+      - アプリケーションログの設定にNginxログをNginxパーサーを使い構造化するフィルターを追加
+
+      ## 2. メトリクスフィルターの作成
+      - ステータスコード（2xx、3xx、4xx、5xx）の数をカウントするメトリクスフィルターを設定
+
+      # プラクティス
+      
+      - FrontendのNginxログを構造化し、メトリクス化する
+        - FluentBitの設定修正
+          - ConfigMap:fluent-bit-config の parsers.conf に nginx パーサーを追加
+          - ConfigMap:application-log.conf でfrontendに該当するログにnginxパーサーを適用
+          - ConfigMapを修正してapplyしたらFluentBitのDaemonSetをリスタート
+        - メトリクスフィルターの作成
+          - 各ステータスコード（2xx、3xx、4xx、5xx）をカウントするメトリクス
+            - パターンは`"{ $.code = \"2*\" }"`などを指定
+            - メトリクスの名前空間は`Custom/HTTPStatus`など
+            - メトリクス名は`FrontendHttp2xxCount`など
+            - 検出したら値を`1`としてカウント
+        - 動作確認
+          - frontendにアクセスしてログを生成
+          - CloudWatch Logs に送られたログが以下のように構造化されている
+            ``` JSON
+            {
+                "remote": "169.254.7.127",
+                "host": "-",
+                "user": "-",
+                "method": "GET",
+                "path": "/",
+                "code": "200",
+                "size": "208",
+                "referer": "-",
+                "agent": "kube-probe/1.32+",
+                "time": "2025-09-02T09:01:37.903131401Z",
+                "stream": "stdout",
+                "_p": "F",
+                "kubernetes": {
+                    "pod_name": "frontend-56dbfc78cd-zmcdr",
+                    "namespace_name": "default",
+                    "pod_id": "1e8384f6-0d30-4609-9973-bf58a867677d",
+                    "host": "i-08878310cf8bb3b93",
+                    "container_name": "nginx",
+                    "docker_id": "70330fa3e583650902a57b680cc29cc62916c9f23379de0f042606926e2612cd",
+                    "container_hash": "456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/frontend@sha256:e074407327a1b1d4bd0020cbcae4a598982f11a68eb5b6d9c9ed772d9903d417",
+                    "container_image": "456247443832.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:202507181652"
+                }
+            }
+            ```
+          - CloudWatch Metrics にメトリクスが作成され、各ステータスコードのカウント数が可視化できること
