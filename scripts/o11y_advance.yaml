@@ -79,6 +79,8 @@ issues:
       - FrontendのNginxログを構造化し、メトリクス化する
         - FluentBitの設定修正
           - ConfigMap:fluent-bit-config の parsers.conf に nginx パーサーを追加
+            - formatは`regrex`
+            - Regexは` ^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?.*$`
           - ConfigMap:application-log.conf でfrontendに該当するログにnginxパーサーを適用
           - ConfigMapを修正してapplyしたらFluentBitのDaemonSetをリスタート
         - メトリクスフィルターの作成
