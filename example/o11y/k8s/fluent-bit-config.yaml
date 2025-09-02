@@ -60,6 +60,13 @@ data:
       Buffer_Size         0
       Use_Pod_Association On
 
+    [FILTER]
+      Name                parser
+      Match               *nginx*
+      Key_Name            log
+      Parser              nginx
+      Reserve_Data        On
+
     [OUTPUT]
       Name                cloudwatch_logs
       Match               *frontend*
@@ -217,6 +224,13 @@ data:
       Regex               (?<log>(?<="log":")\d{4}[\/-]\d{1,2}[\/-]\d{1,2}[ T]\d{2}:\d{2}:\d{2}(?!\.).*?)(?<!\\)".*(?<stream>(?<="stream":").*?)".*(?<time>\d{4}-\d{1,2}-\d{1,2}T\d{2}:\d{2}:\d{2}\.\w*).*(?=})
       Time_Key            time
       Time_Format         %Y-%m-%dT%H:%M:%S.%LZ
+
+    [PARSER]
+        Name                nginx
+        Format              regex
+        Regex               ^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?.*$
+        Time_Key            time
+        Time_Format         %d/%b/%Y:%H:%M:%S %z
 kind: ConfigMap
 metadata:
   labels:

@@ -53,3 +53,56 @@ resource "aws_cloudwatch_metric_alarm" "log_test_alarm" {
   actions_enabled     = false // 通知したい場合はSNS等のアクションを追加
   treat_missing_data  = "notBreaching"
 }
+
+# フロントエンドログのHTTPステータスコード別メトリクス
+resource "aws_cloudwatch_log_metric_filter" "frontend_http_status_2xx" {
+  name           = "${local.name_prefix}-frontend-http-2xx"
+  log_group_name = aws_cloudwatch_log_group.frontend_container_insights.name
+  pattern        = "{ $.code = \"2*\" }"
+
+  metric_transformation {
+    name      = "FrontendHttp2xxCount"
+    namespace = "Custom/HTTPStatus"
+    value     = "1"
+    default_value = "0"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "frontend_http_status_3xx" {
+  name           = "${local.name_prefix}-frontend-http-3xx"
+  log_group_name = aws_cloudwatch_log_group.frontend_container_insights.name
+  pattern        = "{ $.code = \"3*\" }"
+
+  metric_transformation {
+    name      = "FrontendHttp3xxCount"
+    namespace = "Custom/HTTPStatus"
+    value     = "1"
+    default_value = "0"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "frontend_http_status_4xx" {
+  name           = "${local.name_prefix}-frontend-http-4xx"
+  log_group_name = aws_cloudwatch_log_group.frontend_container_insights.name
+  pattern        = "{ $.code = \"4*\" }"
+
+  metric_transformation {
+    name      = "FrontendHttp4xxCount"
+    namespace = "Custom/HTTPStatus"
+    value     = "1"
+    default_value = "0"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "frontend_http_status_5xx" {
+  name           = "${local.name_prefix}-frontend-http-5xx"
+  log_group_name = aws_cloudwatch_log_group.frontend_container_insights.name
+  pattern        = "{ $.code = \"5*\" }"
+
+  metric_transformation {
+    name      = "FrontendHttp5xxCount"
+    namespace = "Custom/HTTPStatus"
+    value     = "1"
+    default_value = "0"
+  }
+}
