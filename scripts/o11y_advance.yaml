@@ -119,3 +119,39 @@ issues:
             }
             ```
           - CloudWatch Metrics にメトリクスが作成され、各ステータスコードのカウント数が可視化できること
+
+  - title: Application Signalsを使ったJavaアプリケーションのメトリクス収集
+    body: |
+      Application Signalsを使ってJavaアプリケーションの詳細なメトリクス収集とトレーシングを行い、アプリケーションの可観測性を向上させます。
+
+      # Application Signalsの必要性
+      - Container InsightsはK8s観点のメトリクスは収集するが、Pod内のアプリケーションレベルの詳細なメトリクスは収集しない
+      - 例えばJavaアプリケーションの場合、JMXメトリクスは収集されない
+      - アプリケーションの動作をより深く理解し、パフォーマンスのボトルネックやエラーの原因を特定するためには、アプリケーションレベルのメトリクスが必要になる
+      
+      # 解決策
+      - CloudWatch Application Signalsを有効化し、対応したアプリケーションのメトリクスを収集する
+      - Prometheusでメトリクスを収集
+      - OpenTelemetryを使ってメトリクスを収集
+      
+      本プラクティスでは、Application Signals を適用し、詳細なメトリクス収集を実現します。
+
+      # Application Signalsの概要
+      
+      - Java等の対応したアプリケーションのメトリクスを収集できる [サポートされるテクノロジースタック](https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/appinsights-what-is.html#appinsights-stack)
+      - CloudWatch Observability EKS アドオンに組み込まれている
+      - ワークロード(NamespaceまたはPod)で有効化するだけで利用可能
+      - 収集されるメトリクス [Application Signals によって収集されるメトリクス](https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/AppSignals-MetricsCollected.html#AppSignals-RuntimeMetrics)
+      
+      # プラクティス
+
+      - アカウントでCloudWatch Application Signalsを有効化する
+        - CloudWatch > Application Signals > サービス を選択。`ステップ 1. サービス検出の 1 回限りの設定`が完了していること
+        - 上記完了していない場合は公式ドキュメントを参考に設定を行う [アカウントで Application Signals を有効にする](https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/CloudWatch-Application-Signals-Enable.html)
+      - Javaアプリケーションをデプロイし、Application SignalsでJMXメトリクスを収集する
+        - 以下のJavaアプリケーションをデプロイする
+          - Deployment
+          - イメージ:`ryotamori/jmx-agent-example:v2`
+          - podTemplateのannotationsに`instrumentation.opentelemetry.io/inject-java: "true"`を追加
+      - 確認
+        - CloudWatchメトリクスのカスタム名前空間に`ApplicationSignals`が追加され、JMX関連のメトリクスを確認する
