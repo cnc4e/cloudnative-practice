@@ -2,7 +2,7 @@
 resource "aws_eks_cluster" "this" {
   name                          = local.name_prefix
   role_arn                      = aws_iam_role.cluster.arn
-  version                       = "1.32"
+  version                       = "1.33"
   bootstrap_self_managed_addons = false
 
   access_config {
