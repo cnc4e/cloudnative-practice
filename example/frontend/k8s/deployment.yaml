@@ -64,6 +64,11 @@ spec:
             - ALL
           seccompProfile:
             type: RuntimeDefault
+        resizePolicy:
+        - resourceName: cpu
+          restartPolicy: NotRequired
+        - resourceName: memory
+          restartPolicy: RestartContainer
         resources:
           requests:
             cpu: "100m"

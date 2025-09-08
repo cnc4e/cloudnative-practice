@@ -100,3 +100,52 @@ issues:
         - `httpd`Podから以下コマンドで継続的にリクエストを送る
           - `ab -n 100000 -c 10 http://frontend/`
         - frontendのPod数が増えることを確認する
+  - title: In-Place Pod Vertical Scaling (IPVS)によるリソース増強
+    body: |
+      Kubernetes 1.33からベータ機能として利用可能になったIn-Place Pod Vertical Scaling (IPVS)を使用するとPodを再起動せずにリソース制限を動的に調整することができます。従来のスケールアップと異なり、Podのダウンタイムなしでリソースを増減できます。
+
+      # IPVSの必要性
+      - アプリケーションの負荷が変動し、CPUやメモリの要求量が変わる
+      - 従来のスケールアップはPodを再起動するため、短時間のダウンタイムが発生する
+      - ステートフルなアプリケーションやlong-runningなジョブでは再起動による影響が大きい
+      - リアルタイムでリソース調整を行い、可用性を維持したい
+
+      # IPVSの仕組み
+      - `InPlacePodVerticalScaling`フィーチャーゲートを有効にする必要がある。(EKS 1.33以降でデフォルト有効)
+      - Podのspecで`resizePolicy`を設定することで、in-place resizeが可能になる
+        - リサイズ時にコンテナを再起動するかどうかを指定できる
+      - kubeletがコンテナランタイムと連携してリソース制限を動的に変更する
+      - PodのStatusで現在のリソース状態とリサイズの進行状況を確認できる
+
+      # プラクティス
+
+      ## 前提条件
+      - EKSクラスターが`v1.33`以上であること
+
+      ## 基本的なIPVS実装
+
+      - FrontendまたはBackendのDeploymentに対してIPVSを設定する
+        - `resizePolicy`でメモリとCPUのリサイズポリシーを指定する
+          - CPUはコンテナの再起動なしでリサイズ可能
+          - メモリはコンテナを再起動してリサイズ
+      - 動作確認
+        - cpu
+          - 以下の様なコマンドでリサイズする
+            ```
+            kubectl -n default patch pod Pod名 --subresource resize --patch '{"spec":{"containers":[{"name":"コンテナ名", "resources":{"requests":{"cpu":"リクエスト"}, "limits":{"cpu":"リミット"}}}]}}'
+            ```
+          - Podが再起動**しない**
+          - コンテナ内で以下コマンドを実行するとリソース量が分かる
+            ```
+            cat /sys/fs/cgroup/cpu.max
+            ```
+        - memory
+          - 以下の様なコマンドでリサイズする
+            ```
+            kubectl -n default patch pod Pod名 --subresource resize --patch '{"spec":{"containers":[{"name":"コンテナ名", "resources":{"requests":{"memory":"リクエスト"}, "limits":{"memory":"リミット"}}}]}}'
+            ```
+          - Podが再起動**する**
+          - コンテナ内で以下コマンドを実行するとリソース量が分かる
+            ```
+            cat /sys/fs/cgroup/memory.max
+            ```
