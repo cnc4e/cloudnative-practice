@@ -1,6 +1,6 @@
 [Top](../README.md)  
 前: [コンテナ](./container.md)  
-次: [作成中]()  
+次: [オブザーバビリティ](./observability.md)  
 
 ---
 
@@ -114,4 +114,4 @@ CI/CDでコンテナイメージのビルドやマニフェストの更新を自
 
 [Top](../README.md)  
 前: [コンテナ](./container.md)  
-次: [作成中]()
+次: [オブザーバビリティ](./observability.md)  

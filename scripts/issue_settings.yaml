@@ -17,19 +17,19 @@ settings:
     label:
       name: CI/CD
       color: f9d0c4
-      description: インフラや設定の管理
+      description: CI/CDの設定
     issue_yaml: cicd.yaml
   - name: o11y
     label:
-      name: オブザーバビリティ
+      name: オブザーバビリティ（基本）
       color: 7b00a8
-      description: インフラや設定の管理
+      description: 可観測性の設定
     issue_yaml: o11y.yaml
   - name: availability
     label:
       name: 可用性
       color: c0fed0
-      description: インフラや設定の管理
+      description: 可用性の設定
     issue_yaml: availability.yaml
   - name: security
     label:
@@ -37,3 +37,27 @@ settings:
       color: ff6b6b
       description: セキュリティ機能の設定
     issue_yaml: security.yaml
+  - name: operations
+    label:
+      name: 運用・保守
+      color: 6a994e
+      description: 運用・保守に関する設定
+    issue_yaml: operations.yaml
+  - name: o11y-advance
+    label:
+      name: オブザーバビリティ（高度）
+      color: 06cafe
+      description: より高度な可観測性の設定
+    issue_yaml: o11y_advance.yaml
+  - name: scale
+    label:
+      name: 拡張性
+      color: 3e0423
+      description: 拡張性の設定
+    issue_yaml: scale.yaml
+  - name: cluster
+    label:
+      name: クラスタ
+      color: 8ce983
+      description: クラスタ構成
+    issue_yaml: cluster.yaml

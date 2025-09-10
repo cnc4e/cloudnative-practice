@@ -15,5 +15,3 @@ python create_issues.py container
 
 - ラベルやissue内容は `issue_settings.yaml` で管理します。
 - 各種issueリストは `container.yaml` や `configuration.yaml` で管理します。
-
-既存の `container.py`/`configuration.py` は不要です。

@@ -51,11 +51,11 @@
 
 # プラクティス
 
-プラクティスは大きく2部構成になっています。`基本構成`はクラウドネイティブの基礎を学ぶための内容で、`追加課題`は実PJに対応可能なレベルを目指すための内容です。
+プラクティスは大きく2部構成になっています。`基本課題`はクラウドネイティブの基礎を学ぶための内容で、`追加課題`は実PJに対応可能なレベルを目指すための内容です。
 
-`基本構成`は順番に実施することを推奨します。`追加課題`は興味のあるものを選んで実施してください。
+`基本課題`は順番に実施することを推奨します。`追加課題`は興味のあるものを選んで実施してください。
 
-- 基本構成
+- 基本課題
   - [環境セットアップ](docs/setup.md)
   - [CloudNativeの基礎](docs/cloudnative.md)
   - [構成管理](docs/configuration.md)
@@ -63,30 +63,9 @@
   - [CI/CD](docs/cicd.md)
   - [オブザーバビリティ](docs/observability.md)
 - 追加課題
-  - [クラスタ構成]()
-    - ノードタイプの混在
-    - Ingressを使った外部公開
-    - 用途に応じたノード分割
-    - 用途に応じたNamespace分割
-    - CNIの選択
   - [可用性](docs/availability.md)
-  - [性能・拡張性](docs/scalability.md)
-    - resources
-    - HPA
-    - VPA
-    - ノードの拡張
-  - [可観測性](docs/advanced-observability.md)
-    - ロググループの分割
-    - ログの構造化
-    - 構造化ログのメトリクス化
-    - Application Insights を使った可視化
   - [セキュリティ](docs/security.md)
   - [運用・保守](docs/operations.md)
-    - ポリシー制御
-    - CI/CDの活用
-      - イメージスキャン
-      - 静的解析
-      - Planの実施
-      - ドリフト検知
-    - ブランチ戦略
-    - クラスタのバージョンアップ
+  - [可観測性](docs/advanced-observability.md)
+  - [性能・拡張性](docs/scalability.md)
+  - [クラスタ構成](docs/cluster.md)
