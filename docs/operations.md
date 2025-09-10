@@ -41,22 +41,23 @@
 
 ### ポリシーチェック
 
-    - Checkovによるポリシーチェック
+  - Checkovによるポリシーチェック
 
 ### CI/CDの活用
 
-    - CheckovによるポリシーチェックをCIに組み込む
-    - AtlantisによるPRベースのterraform plan/apply
-    - GitHub Actionsによる定期的なドリフトチェック
+  - CheckovによるポリシーチェックをCIに組み込む
+  - AtlantisによるPRベースのterraform plan/apply
+  - GitHub Actionsによる定期的なドリフトチェック
 
 ### Git
 
-    - ブランチ戦略
-    - リポジトリ設定
+  - ブランチ戦略
+  - リポジトリ設定
+
 ### コード管理
 
-    - Terraform構成管理
-    - K8sマニフェスト構成管理
+  - Terraform構成管理
+  - K8sマニフェスト構成管理
 
 ### クラスタのメンテナンス
 
