@@ -21,17 +21,24 @@ issues:
         参考: [kubeconfig ファイルを作成して kubectl を EKS クラスターに接続する](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/create-kubeconfig.html)
       - AWSコンソール上でリソースが作成されたこと。対象：EKS/IAM
 
-      # 参考資料
-      EKSをterraformで作成するterraformのコードは「Resource: aws_eks_cluster」「module: eks」のどちらかで書くことができる。
-      - Resource: aws_eks_cluster … 0からコードを書く。(exampleコードはこちらで構築している)
+      # 参考情報
+      ## aws_eks_clusterリソースとeksモジュールの違い
+      TerraformでAmazon EKSを構築する方法は、大きく以下の2通りがある。
+      1) Resource: aws_eks_cluster を利用する方法
+        Terraformの`aws_eks_cluster`リソースを使い、EKSクラスターをゼロから定義する方法。
+        細かい設定まで自由に制御できる一方で、関連リソース（VPC、IAM、Node Groupなど）も含めて自分で記述する必要がある。
+        ※ exampleコードはこちらの方法で構築している。
         - [Resource: aws_eks_cluster](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_cluster)
 
-      - module: eks … 有志コミュニティが公開しているTerraformコードのセットのモジュールを呼び出す。EKS構築を簡単にするための仕組み。内部ではaws_eks_clusterなどのresourceが定義されている。
+      2) module: eks を利用する方法
+        コミュニティが提供しているTerraformモジュールを利用する方法。
+        EKS構築に必要なリソース（aws_eks_clusterなど）が内部でまとめて定義されており、
+        必要なパラメータを指定するだけで、比較的簡単にクラスターを構築できる。
         - [AWS EKS Terraform module](https://registry.terraform.io/modules/terraform-aws-modules/eks/aws/latest)
         - [TerraformとAmazon EKSを使ったお手軽k8s環境の作り方](https://qiita.com/snow_easy/items/6376d00e9521383934cc)
         - [Terraform で Auto Mode の EKS クラスターを作成して、Pod Identity で AWS 権限を与えたアプリケーションをデプロイしてみた](https://dev.classmethod.jp/articles/create-eks-auto-mode-cluster-by-terraform/)
 
-      # kubectlコマンドでエラーが発生する場合の対処方法
+      ## kubectlコマンドでエラーが発生する場合の対処方法
       ### ケース①: kubectl configに残っている古いクラスタに接続してしまう
       - 先にK8sプラクティスを実施してから本プラクティスを実施している場合など複数のクラスタ情報がkubectl configに残っている場合、どのクラスタに接続しようとしているか確認する必要がある。
         1) `kubectl config get-contexts`コマンドを実行し、kubectl configに残っているクラスタ情報と接続先のクラスタ情報を確認する。
