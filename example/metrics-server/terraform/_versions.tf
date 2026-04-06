@@ -12,7 +12,7 @@ terraform {
     bucket         = "cn-practice-tfstate"
     key            = "metrics-server.tfstate"
     region         = "ap-northeast-2"
-    dynamodb_table = "cn-practice-tfstate"
+    use_lockfile   = true
     encrypt        = true
   }
 }
