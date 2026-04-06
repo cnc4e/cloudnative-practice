@@ -83,7 +83,7 @@ issues:
       - デプロイ後、PodがRunning状態になっていることを確認する。
         接続確認はフロントエンドをデプロイ後に行う。
 
-      # 証明書エラーが発生する場合の対処方法
+      # docker buildの時に証明書エラーが発生する場合の対処方法
       社内プロキシを経由する場合など、npmコマンド実行時に証明書エラーでコンテナからインターネット上のファイルをダウンロードできない場合がある。
       その場合、Dockerfilesに`npm_config_strict_ssl=false`を追記することでダウンロード可能になる場合がある。
 
@@ -121,6 +121,11 @@ issues:
           - タイプはLoadBalancer
           - ポートは80
           - ターゲットポートは80
+          - metadata.annotationsに以下を追加　※ALBコントローラーにNLBを作成させる際の設定の指定
+            - aws-load-balancer-typeはexternal　※外部向けNLBを作る
+            - aws-load-balancer-nlb-target-typeはip　※Node向けではなくPodのIPに直接ルーティング
+            - aws-load-balancer-schemeはinternet-facing　※インターネット公開
+              ※参考サイト：https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/service/annotations/#lb-scheme
         ※注意：この時点ではまだIngressは不要。
       
       # 確認
