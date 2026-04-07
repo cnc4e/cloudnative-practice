@@ -13,7 +13,8 @@ issues:
         - クラスタエンドポイントはパブリックおよびプライベートを有効
           - パブリックエンドポイントでアクセスできるCIDRに制限をかける
             - 作業端末のIPアドレスを許可する（例: 今操作している端末のパブリックIP。`curl -s https://checkip.amazonaws.com`コマンド等で確認する。）
-        - クラスタを作成したIAMユーザーにAmazonEKSClusterAdminPolicy権限を付与　※kubectlコマンドでEKSを操作できるようにするため
+        - クラスタを作成したIAMユーザーに対して、EKSのアクセスエントリを作成しAmazonEKSClusterAdminPolicy権限を付与
+          ※アクセスエントリとは「どのIAMが、このEKSクラスタに入って何できるか」を定義する仕組み。IAM権限+アクセスエントリを設定することでEKSクラスタにアクセス可能になる。
         - 組み込みノードプール(system および general-purpose)を有効
       
       # 確認
@@ -27,7 +28,7 @@ issues:
       1) Resource: aws_eks_cluster を利用する方法
         Terraformの`aws_eks_cluster`リソースを使い、EKSクラスターをゼロから定義する方法。
         細かい設定まで自由に制御できる一方で、関連リソース（VPC、IAM、Node Groupなど）も含めて自分で記述する必要がある。
-        ※ exampleコードはこちらの方法で構築している。
+        ※ 本プラクティスでは学習のためこちらを推奨。exampleコードはこちらの方法で構築している。
         - [Resource: aws_eks_cluster](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_cluster)
 
       2) module: eks を利用する方法
