@@ -145,6 +145,7 @@ issues:
       # その他
       デプロイ後、PodがRunning状態になっていることを確認する。
       NLBのDNS名でWEBブラウザ等を使ってアクセスし「フロントエンドからのメッセージ」と「こんにちは、フロントエンドさん！」が表示されていることを確認する。
+
   - title: バックエンドの公開ポートを環境変数で指定できるようにする
     body: |
       # 本Issueでやること
@@ -153,7 +154,7 @@ issues:
       # 前提
       - バックエンドのデプロイが完了していること
       
-      # まずして欲しいこと
+      # 事前作業
       - コンテナイメージのリビルド&プッシュ
         - `codes/backend/app`ディレクトリにある`Dockerfile`の以下箇所を削除
           ```
@@ -172,13 +173,15 @@ issues:
       # 本Issueで作成するもの
       - backendのk8sリソース
         - Deployment
-          - コンテナイメージはECRのfrontendリポジトリから取得
+          - コンテナイメージはECRのbackendリポジトリから取得
           - 環境変数`PORT`を追加
             - 値は3000
       
-      # その他
-      K8sリソース群をデプロイ後、PodがRunning状態になっていることを確認する。
-      また、Podをdescribeして、環境変数`PORT`が設定されていることを確認する。
+      # 確認
+      - K8sリソース群をデプロイ後、PodがRunning状態になっていること。
+      - Podをdescribeして、環境変数`PORT`が設定されていること。
+      - WEBコンソールを確認し、プッシュしたイメージがbackendリポジトリ内に存在すること。
+
   - title: フロントエンドのメッセージを変更する
     body: |
       # 本Issueでやること
@@ -187,7 +190,7 @@ issues:
       # 前提
       - フロントエンドのデプロイが完了していること
       
-      # まずして欲しいこと
+      # 事前作業
       - コンテナイメージのリビルド&プッシュ
         - `codes/frontend/app/src`ディレクトリにある`App.js`の以下箇所を修正
           ```
@@ -200,26 +203,49 @@ issues:
           - ECRへのプッシュ方法は[こちら](https://docs.aws.amazon.com/ja_jp/AmazonECR/latest/userguide/docker-push-ecr-image.html)を参考にする
 
       # 本Issueで作成するもの
-      - frontendのk8sリソース
+      - frontendのk8sリソース (既存修正)
         - Deployment
           - コンテナイメージはECRのfrontendリポジトリから取得
       
-      # その他
-      NLBのDNS名でアクセスし、フロントエンドの画面に「バックエンドから取得したメッセージ」と表示されていることを確認する。
+      # 確認
+      ブラウザでNLBのDNS名でアクセスし、フロントエンドの画面に「バックエンドから取得したメッセージ」と表示されることを確認する。
+
   - title: （任意）コスト対策のために平日日中帯だけPodを動かす
     body: |
       # 本Issueでやること
-      コスト対策のために、平日日中帯だけPodを動かすようにします。EKS AutoMode だと AutoScaling のようにノード数を0に指定できません。その代わり、スケジュールされるPodを無くすことでノードを停止します。このissueはプラクティスではなくあらかじめ作成してあるマニフェストをデプロイします。   
+      コスト対策のために、平日日中帯だけPodを動かすようにします。  
+      EKS AutoMode だと AutoScaling のようにノード数を0に指定できません。  
+      その代わり、スケジュールされるPodを無くすことでノードを停止します。  
+      このissueはプラクティスではなくあらかじめ作成してあるマニフェストをデプロイします。  
 
       # 前提
       - EKSクラスタを作成済
       
-      # やること
+      # 作業手順
       - `example/cron`ディレクトリにあるマニフェスト群をデプロイする
         ```
         cd example/cron
         kubectl apply -f .
         ```
 
-      # その他
-      デフォルトだと日本時間の月～金曜日 09:00-19:00 にPodが動くように設定されます。時間を変えたい場合はCronJobのスケジュール設定を調整してください。
+      ### 補足説明
+      デフォルトだと日本時間の月～金曜日 09:00-19:00 にPodが動くように設定されます。  
+      時間を変えたい場合はCronJobのスケジュール設定を調整してください。
+
+      ### 時間の経過を待たずに即座に停止起動ジョブを実行する方法
+      1) 停止: `kubectl create job --from=cronjob/scale-down-all manual-scale-down`
+      2) 起動: `kubectl create job --from=cronjob/scale-up-all manual-scale-up`
+      3) 確認: `kubectl get job`, `kubectl get pod`, `kubectl get deploy`
+      4) 後片付け: `kubectl delete job manual-scale-up manual-scale-down`
+
+      # 確認
+      - cronjobが作成されたことを確認する
+      ```
+      kubectl get cronjob
+      kubectl describe cronjob scale-down-all
+      kubectl describe cronjob scale-up-all
+      ```
+
+
+
+
