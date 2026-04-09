@@ -399,44 +399,105 @@ issues:
       # 確認
       - Argo CD の Web UI でアプリケーションが追加されていることを確認する
       - また、追加したアプリケーションの`SYNC STATUS`が`Synced`になっていることを確認する
+
   - title: Argo CD ImageUpdater をインストール
     body: |
-      ECRにプッシュしたイメージを Argo CD で自動的に更新するための拡張機能 [ImageUpdater](https://argocd-image-updater.readthedocs.io/en/stable/) をインストールする。
+      # 本Issueでやること
+      ECRにプッシュされたイメージを Argo CD で自動的に更新するための拡張機能 [ImageUpdater](https://argocd-image-updater.readthedocs.io/en/stable/) をインストールする。
       コードは`codes/actions/k8s`ディレクトリに配置する。
       コードを作成し、リソースのデプロイが完了したらPRを出す。
 
       # 前提
       - Argo CD をインストールする
       
-      # 欲しいもの
+      # 本Issueで作成するもの
       - Argo CD ImageUpdater
-        - helmを使いインストール
+        - helmを使いインストールする
           - チャートは[argo-helm](https://github.com/argoproj/argo-helm)にある[argocd-image-updater](https://github.com/argoproj/argo-helm/tree/main/charts/argocd-image-updater)を使用する
           - Namespaceは`argocd`を指定
-          - ECRへログインするためのオプションを設定(value.yamlに記載)
-            - パラメーターは[この](https://github.com/argoproj-labs/argocd-image-updater/issues/112#issuecomment-2235983279)issueコメントを参考に調整する
+          - 以下の内容を`value.yaml`に記載し、`helm install`コマンドの引数に指定する
+          ```
+          extraEnv:
+            - name: AWS_REGION
+              value: "<リージョン名>"
+
+          nodeSelector:
+            eks.amazonaws.com/compute-type: auto
+
+          serviceAccount:
+            create: true
+            name: "argocd-image-updater"
+            automountServiceAccountToken: true
+
+          config:
+            applicationsAPIKind: "kubernetes"
+            logLevel: "debug"
+
+            registries:
+            - name: ECR
+              api_url: https://<AWSアカウント名>.dkr.ecr.<リージョン名>.amazonaws.com
+              prefix: <AWSアカウント名>.dkr.ecr.<リージョン名>.amazonaws.com
+              default: true
+              ping: yes
+              insecure: no
+              credentials: ext:/scripts/ecr-login.sh
+              credsexpire: 10h
+ 
+          authScripts:
+            enabled: true
+            scripts:
+              ecr-login.sh: |
+                #!/bin/sh
+                set -e
+                PASS="$(aws ecr get-login-password --region <リージョン名>)"
+                printf 'AWS:%s' "${PASS}"
+
+          serviceAccount:
+            create: true
+            name: "argocd-image-updater"
+                automountServiceAccountToken: true
+          ```
         - `helm install`のコマンド全文を`actions/k8s`ディレクトリ配下の`README.md`に書いて保存すること
+
+      # 参考
+      - [Support ECR authentication](https://github.com/argoproj-labs/argocd-image-updater/issues/112#issuecomment-2235983279)
+
+      # 確認
+      - `helm list -A`コマンドを実行し、Argo CD ImageUpdaterがインストールされたことを確認する。
+
   - title: Argo CD ImageUpdater に Pod Identity でIAMロールをアタッチする
     body: |
-      ImageUpdater が ECR を確認できるようにIAMロールを設定する。
+      # 本Issueでやること
+      ImageUpdater が ECR にアクセスできるように Pod Identity を利用して IAMロールを付与する。
       コードは`codes/argocd/terraform`ディレクトリに配置する。
       コードを作成し、リソースのデプロイが完了したらPRを出す。
 
       # 前提
       - Argo CD ImageUpdater をインストール
-      
-      # 欲しいもの
-      - ImageUpdater Podに付与するIAMロール
-        - 権限はAWSマネージドポリシーの`AmazonEC2ContainerRegistryReadOnly`
+
+      # 本Issueで作成するもの
+      - ImageUpdater Podに付与するIAMロール ([リソース: aws_iam_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role))
         - IAMロールは Pod Identity を使ってアタッチできるように信頼ポリシーを設定する
-          - `Service:pods.eks.amazonaws.com`
-          - `Action:["sts:AssumeRole","sts:TagSession"]`
-      - Pod Identity の設定 [aws_eks_pod_identity_association](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_pod_identity_association)
-        - ImageUpdater Pod用に作成したロールを Pod Identity にアタッチする
-        - ImageUpdater Pod の Namespace と ServiceAccount は以下を指定
-          - ns:argocd
-          - sa:argocd-image-updater
-        - EKSクラスタ名はできればeksモジュールからoutputで取得すること
+          - Service:pods.eks.amazonaws.com
+          - Action:["sts:AssumeRole","sts:TagSession"]
+
+      - IAMロールに付与する権限 ([リソース: aws_iam_role_policy_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment))
+        - AmazonEC2ContainerRegistryReadOnly
+
+      - Pod Identity の設定 ([リソース:aws_eks_pod_identity_association](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_pod_identity_association))
+         - ImageUpdater Pod用に作成したロールを Pod Identity にアタッチする
+         - ImageUpdater Pod の Namespace と ServiceAccount は以下を指定
+            - ns:argocd
+            - sa:argocd-image-updater
+         - EKSクラスタ名はできればeksモジュールからoutputで取得すること(EKS側でoutputを設定し、actions側でdata.terraform_remote_stateによる読み込みが必要)
+
+      # 確認
+      - 以下コマンドを実行し、ImageUpdater PodにIAMロールがアタッチされていることを確認する。
+      ```
+      aws eks list-pod-identity-associations --cluster-name <クラスタ名> --region <リージョン名>
+      aws iam get-role --role-name <ロール名>
+      ```
+
   - title: フロントエンドのイメージを自動更新する
     body: |
       ECRのイメージ更新を検知してフロントエンドのDeploymentを自動的に更新する。
