@@ -201,6 +201,45 @@ issues:
       kubectl describe cronjob scale-up-all
       ```
 
+  - title: 既存のK8sマニフェストをKustomize管理する
+    body: |
+      # 本Issueでやること
+      frontend/backendアプリをKustomize管理にする。
+      [参考：Kustomizeプラクティス](https://github.com/cnc4e/k8s-practice/blob/master/3.Advanced/docs/Kustomize.md)
+      コードは`codes/frontend/k8s`および`codes/backend/k8s`ディレクトリに配置する。  
+      
+      # Kustomizeを導入する目的
+      - Kubernetesマニフェストの差分を柔軟に管理できる
+        - ベースとなるマニフェストを変更せずに、環境ごとの差分（例：レプリカ数、イメージタグ、環境変数など）を管理できる。
+        - イメージタグやレプリカ数、環境変数などの設定値をマニフェストを直接編集せずに変更できる。
+        - マニフェストの共通部分をまとめることで、マニフェストの可読性を上げる。
+      - Argo CDと組み合わせることで、デプロイの自動化を実現する。
 
+      # 前提
+      - フロントエンドのデプロイが完了していること
+      - バックエンドのデプロイが完了していること
 
+      # 本Issueで作成するもの
+      - Kustomizeの設定ファイル　※frontend/backend両方に作成する
+        - ファイル名は`kustomization.yaml`
+        - apiVersionは`kustomize.config.k8s.io/v1beta1`等
+        - kindは`Kustomization`
+        - resourcesは`deployment.yaml`,`service.yaml`　※自身の作成したリソースファイルを指定
+        - images.nameは`<既存のイメージ名>`
+        - images.newTagは`<変更したいタグ名>`
+      
+      - アプリケーション定義ファイルの修正　※frontend/backend両方修正する
+        - 対象ファイルは`codes/frontend/k8s/application.yaml`, `codes/backend/k8s/application.yaml` (既存修正)
+        - spec.sourceに`kustomize: {}`を追記
 
+      # 確認
+      - 以下コマンドでマニフェストが正しく生成されること
+      ```
+      kubectl kustomize codes/frontend/k8s | head
+      kubectl kustomize codes/backend/k8s | head
+      ```
+      - 以下コマンドを実行し、内容が表示されること
+      ```
+      kubectl kustomize ~/cloudnative-practice/cloudnative-practice/codes/frontend/k8s
+      kubectl kustomize ~/cloudnative-practice/cloudnative-practice/codes/backend/k8s
+      ```
