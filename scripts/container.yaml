@@ -1,30 +1,73 @@
 issues:
   - title: EKSクラスタを作成する
     body: |
-      コンテナを動かすオーケストレータであるEKSクラスタを作成する**eks**モジュールを作成する。  
+      # 本Issueでやること
+      コンテナを動かすオーケストレータであるEKSクラスタを作成する。  
       コードは`codes`ディレクトリ配下に`eks/terraform`ディレクトリを作成し、そこにコードを配置する。  
       コードを作成し、リソースのデプロイが完了したらPRを出す。
       
-      # 欲しいもの
+      # 本Issueで作成するもの
       - EKSクラスタ
-        - オートモードを有効
-        - クラスタにはパブリックサブネットとプライベートサブネットを使用
+        - オートモードを有効　※ノード管理をAWSに任せる機能
+        - クラスタにはパブリックサブネットとプライベートサブネットを使用 　※前Issue「ネットワークを作成する」で作成したものを利用する
         - クラスタエンドポイントはパブリックおよびプライベートを有効
           - パブリックエンドポイントでアクセスできるCIDRに制限をかける
-            - 作業端末のIPアドレスを許可する（例：踏み台EC2 パブリックIP、NATゲートウェイ パブリックIP、作業端末のパブリックIP）
-        - EKSの操作権限はアクセスエントリでクラスタを作成したIAMユーザーにAmazonEKSClusterAdminPolicy権限を付与
+            - 作業端末のIPアドレスを許可する（例: 今操作している端末のパブリックIP。`curl -s https://checkip.amazonaws.com`コマンド等で確認する。）
+        - クラスタを作成したIAMユーザーに対して、EKSのアクセスエントリを作成しAmazonEKSClusterAdminPolicy権限を付与
+          ※アクセスエントリとは「どのIAMが、このEKSクラスタに入って何できるか」を定義する仕組み。IAM権限+アクセスエントリを設定することでEKSクラスタにアクセス可能になる。
         - 組み込みノードプール(system および general-purpose)を有効
       
-      # その他
-      EKSをデプロイした後、kubectlでアクセスできることも確認する。  
-      参考:[kubeconfig ファイルを作成して kubectl を EKS クラスターに接続する](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/create-kubeconfig.html)
+      # 確認
+      - kubectlでアクセスできることも確認する。（kubectl get svcコマンド等を実行し、エラーにならないこと。）  
+        参考: [kubeconfig ファイルを作成して kubectl を EKS クラスターに接続する](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/create-kubeconfig.html)
+      - AWSコンソール上でリソースが作成されたこと。対象：EKS/IAM
+
+      # 参考情報
+      ## aws_eks_clusterリソースとeksモジュールの違い
+      TerraformでAmazon EKSを構築する方法は、大きく以下の2通りがある。
+      1) Resource: aws_eks_cluster を利用する方法
+        Terraformの`aws_eks_cluster`リソースを使い、EKSクラスターをゼロから定義する方法。
+        細かい設定まで自由に制御できる一方で、関連リソース（VPC、IAM、Node Groupなど）も含めて自分で記述する必要がある。
+        ※ 本プラクティスでは学習のためこちらを推奨。exampleコードはこちらの方法で構築している。
+        - [Resource: aws_eks_cluster](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_cluster)
+
+      2) module: eks を利用する方法
+        コミュニティが提供しているTerraformモジュールを利用する方法。
+        EKS構築に必要なリソース（aws_eks_clusterなど）が内部でまとめて定義されており、
+        必要なパラメータを指定するだけで、比較的簡単にクラスターを構築できる。
+        - [AWS EKS Terraform module](https://registry.terraform.io/modules/terraform-aws-modules/eks/aws/latest)
+        - [TerraformとAmazon EKSを使ったお手軽k8s環境の作り方](https://qiita.com/snow_easy/items/6376d00e9521383934cc)
+        - [Terraform で Auto Mode の EKS クラスターを作成して、Pod Identity で AWS 権限を与えたアプリケーションをデプロイしてみた](https://dev.classmethod.jp/articles/create-eks-auto-mode-cluster-by-terraform/)
+
+      ## kubectlコマンドでエラーが発生する場合の対処方法
+      ### ケース①: kubectl configに残っている古いクラスタに接続してしまう
+      - 先にK8sプラクティスを実施してから本プラクティスを実施している場合など複数のクラスタ情報がkubectl configに残っている場合、どのクラスタに接続しようとしているか確認する必要がある。
+        1) `kubectl config get-contexts`コマンドを実行し、kubectl configに残っているクラスタ情報と接続先のクラスタ情報を確認する。
+        2) `kubectl config use-context <クラスタ名>`コマンドを実行し、接続先のクラスタを切り替える。
+
+      ### ケース②: 証明書エラーが発生する
+      - 作業端末からはインターネット接続できるがkubectlコマンドでは証明書エラーが出る場合（特に社内プロキシを利用している場合等）、kubectl configに埋め込まれたCAを削除することでOSのCAが利用され接続できるようになる場合がある。
+        ```
+        0) 念のためバックアップ
+        cp ~/.kube/config ~/.kube/config.bak.$(date +%Y%m%d%H%M%S)
+        1) 現在のクラスタ名を取得
+        CLUSTER=$(kubectl config view --minify -o jsonpath='{.clusters[0].name}')
+        echo "CLUSTER=${CLUSTER}"
+        2) 埋め込みCAを無効化（=システム信頼ストアを使わせる）
+        kubectl config unset clusters."${CLUSTER}".certificate-authority-data
+        kubectl config unset clusters."${CLUSTER}".certificate-authority
+        3) 確認
+        kubectl get nodes
+        ```
+
   - title: ECRを作成する
     body: |
+      # 本Issueでやること
       ECRのリポジトリを作成する**ecr**モジュールを作成する。  
       コードは`codes`ディレクトリ配下に`ecr`ディレクトリを作成し、そこにコードを配置する。  
       コードを作成し、リソースのデプロイが完了したらPRを出す。
       
-      # 欲しいもの
+      # 本Issueで作成するもの
       - ECR
         - 以下のリポジトリを作成
           - backend
@@ -32,11 +75,12 @@ issues:
         - リポジトリはプライベート
   - title: サブネットにタグを追加する
     body: |
+      # 本Issueでやること
       サブネットにEKSからELBをデプロイするためのタグを追加するため**network**モジュールを改良する。
       タグの内容は[VPC とサブネットの Amazon EKS ネットワーキング要件を表示する](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/network-reqs.html)を参照。
       コードを作成し、リソースのデプロイが完了したらPRを出す。
 
-      # 欲しいもの
+      # 本Issueで作成するもの
       - サブネット
         - パブリックサブネットにはパブリック用のタグを追加
         - プライベートサブネットにはプライベート用のタグを追加
@@ -56,7 +100,7 @@ issues:
         - ビルドしたイメージをECRのbackendリポジトリにプッシュ
           - ECRへのプッシュ方法は[こちら](https://docs.aws.amazon.com/ja_jp/AmazonECR/latest/userguide/docker-push-ecr-image.html)を参考にする
 
-      # 欲しいもの
+      # 本Issueで作成するもの
       - backendのk8sリソース
         - Deployment
           - コンテナイメージはECRのbackendリポジトリから取得
@@ -71,6 +115,7 @@ issues:
       動作確認はフロントエンドをデプロイ後に行う。
   - title: フロントエンドのコンテナをデプロイする
     body: |
+      # 本Issueでやること
       フロントエンドのコンテナをEKSにデプロイする**frontend**モジュールを作成する。  
       コードは`codes`ディレクトリ配下に`frontend/k8s`ディレクトリを作成し、そこにコードを配置する。  
       コードを作成し、リソースのデプロイが完了したらPRを出す。
@@ -86,7 +131,7 @@ issues:
         - ビルドしたイメージをECRのfrontendリポジトリにプッシュ
           - ECRへのプッシュ方法は[こちら](https://docs.aws.amazon.com/ja_jp/AmazonECR/latest/userguide/docker-push-ecr-image.html)を参考にする
 
-      # 欲しいもの
+      # 本Issueで作成するもの
       - frontendのk8sリソース
         - Deployment
           - コンテナイメージはECRのfrontendリポジトリから取得
