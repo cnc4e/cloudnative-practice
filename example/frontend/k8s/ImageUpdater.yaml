@@ -1,0 +1,20 @@
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: frontend-image-updater
+  namespace: argocd
+spec:
+  namespace: argocd
+  writeBackConfig:
+    method: "git"
+    gitConfig:
+      repository: "https://github.com/skwt20/cloudnative-practice"
+      branch: "main"
+      writeBackTarget: "kustomize"
+  applicationRefs:
+    - namePattern: "frontend"
+      images:
+        - alias: "frontend"
+          imageName: "456247443832.dkr.ecr.ap-northeast-1.amazonaws.com/frontend"
+          commonUpdateSettings:
+            updateStrategy: "newest-build"
