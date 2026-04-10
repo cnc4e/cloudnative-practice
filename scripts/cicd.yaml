@@ -437,49 +437,85 @@ issues:
           - ns:argocd
           - sa:argocd-image-updater
         - EKSクラスタ名はできればeksモジュールからoutputで取得すること
+
   - title: フロントエンドのイメージを自動更新する
     body: |
+      # 本Issueでやること
       ECRのイメージ更新を検知してフロントエンドのDeploymentを自動的に更新する。
+      コードはcodes/frontend/k8sディレクトリに配置する。
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
 
       # 前提
       - Argo CD ImageUpdater に Pod Identity でIAMロールをアタッチする
 
-      # 欲しいもの
-      - フロントエンドのアプリケーションに ImageUpdater の自動更新設定を追加する
-        - `codes/frontend/k8s/application.yaml`に[例](https://argocd-image-updater.readthedocs.io/en/stable/examples/)を参考に設定を追加する
-          - イメージバージョンの書き込み方式は`git`にする
-          - イメージリストは`frontend`をエイリアスに追加
-          - 更新戦略は最新イメージにする
+      # 本Issueで作成するもの
+      - ImageUpdaterのCRD(カスタムリソース定義)を作成する ([参考：ImageUpdater with Git write-back](https://argocd-image-updater.readthedocs.io/en/stable/examples/#imageupdater-with-git-write-back))
+        - ファイル名は`ImageUpdater.yaml`など任意
+        - kindは`ImageUpdater`
+        - namespaceは`argocd`
+        - spec.writeBackConfig.methodは`git`
+        - spec.writeBackConfig.gitConfig.repoURLは`https://github.com/<ユーザ名>/cloudnative-practice`等の自身の`cloudnative-practice`リポジトリを指定
+        - spec.writeBackConfig.gitConfig.branchは`main`
+        - spec.writeBackConfig.gitConfig.writeBackTargetは`kustomize`
+        - spec.applicationRefs.namePatternは`frontend`などのアプリケーション名を指定
+        - spec.applicationRefs.images.aliasは`frontend`など任意の名前を指定
+        - spec.applicationRefs.images.imageNameは`<AWSアカウント名>.dkr.ecr.<リージョン名>.amazonaws.com/frontend`などの自身のECRのイメージURLを指定
+        - spec.applicationRefs.images.commonUpdateSettings.updateStrategyは`newest-build`を指定
+
+      # 参考
+      - `application.yaml`のannnotationsにImageUpdaterの情報を記載する方法もあるが、そちらはレガシーな方式のため、今回はImageUpdaterのCRDを作成する方式を採用する。
 
       # 確認
-      - K8sで動くフロンエンドのDeploymentが`フロンエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する`でビルドしたイメージに更新されることを確認する
+      - Issue`フロントエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する`でビルドしたイメージが、ImageUpdaterにより更新と検知され、Deploymentの更新が行われることを確認する
+
   - title: バックエンドのイメージを自動更新する
     body: |
+      # 本Issueでやること
       ECRのイメージ更新を検知してバックエンドのDeploymentを自動的に更新する。
+      コードはcodes/backend/k8sディレクトリに配置する。
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
 
       # 前提
       - Argo CD ImageUpdater に Pod Identity でIAMロールをアタッチする
 
-      # 欲しいもの
-      - バックエンドのアプリケーションに ImageUpdater の自動更新設定を追加する
-        - `codes/backend/k8s/application.yaml`に[例](https://argocd-image-updater.readthedocs.io/en/stable/examples/)を参考に設定を追加する
-          - イメージバージョンの書き込み方式は`git`にする
-          - イメージリストは`backend`をエイリアスに追加
-          - 更新戦略は最新イメージにする
+      # 本Issueで作成するもの
+      - ImageUpdaterのCRD(カスタムリソース定義)を作成する ([参考：ImageUpdater with Git write-back](https://argocd-image-updater.readthedocs.io/en/stable/examples/#imageupdater-with-git-write-back))
+        - ファイル名は`ImageUpdater.yaml`など任意
+        - kindは`ImageUpdater`
+        - namespaceは`argocd`
+        - spec.writeBackConfig.methodは`git`
+        - spec.writeBackConfig.gitConfig.repoURLは`https://github.com/<ユーザ名>/cloudnative-practice`等の自身の`cloudnative-practice`リポジトリを指定
+        - spec.writeBackConfig.gitConfig.branchは`main`
+        - spec.writeBackConfig.gitConfig.writeBackTargetは`kustomize`
+        - spec.applicationRefs.namePatternは`backend`などのアプリケーション名を指定
+        - spec.applicationRefs.images.aliasは`backend`など任意の名前を指定
+        - spec.applicationRefs.images.imageNameは`<AWSアカウント名>.dkr.ecr.<リージョン名>.amazonaws.com/backend`などの自身のECRのイメージURLを指定
+        - spec.applicationRefs.images.commonUpdateSettings.updateStrategyは`newest-build`を指定
 
       # 確認
-      - K8sで動くバックエンドのDeploymentが`バックエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する`でビルドしたイメージに更新されることを確認する
+      - Issue`バックエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する`でビルドしたイメージが、ImageUpdaterにより更新と検知され、Deploymentの更新が行われることを確認する
+
   - title: アプリケーションの更新からDeploymentの更新まで一気通貫で確認する
     body: |
+      # 本Issueでやること
       アプリケーション更新 > GitHub Actions (イメージビルド&プッシュ) > Argo CD ImageUpdater (イメージ更新) > Argo CD (マニフェストデプロイ) まで一気通貫で確認する。
 
       # 前提
       - フロントエンドのイメージを自動更新する
       - バックエンドのイメージを自動更新する
 
-      # やること
-      - フロントエンドまたはバックエンドのアプリケーションコードを更新する
-      - しばらく(10分程)待ち、K8s の Deployment が更新されることを確認する
+      # 作業手順
+      - フロントエンドまたはバックエンドのアプリケーションコードを更新し、GitHubにpushする。
+        - `codes/frontend/app`配下に任意のファイルを作成するでも良い
+      - しばらく(10分程)待ち、以下の動作が実行されることを確認する
+        - GitHub Actionsが実行され、イメージがビルドされてECRにプッシュされることを確認する
+        - Argo CD ImageUpdater がイメージの更新を検知し、K8sマニフェストを更新することを確認する
+        - Argo CD がマニフェストの更新を検知し、Deployment が更新されることを確認する
+        - `kubectl logs -n argocd deployment/argocd-image-updater-controller --tail=30`コマンドを実行し`images_updated=1 errors=0`となること。
+          ログ出力例
+          ```
+          time="2026-03-03T23:28:08Z" level=info msg="Processing results: applications=1 images_considered=1 images_skipped=0 images_updated=1 errors=0" controller=imageupdater controllerGroup=argocd-image-updater.argoproj.io controllerKind=ImageUpdater imageUpdater_name=backend-image-updater imageUpdater_namespace=argocd logger=reconcile
+          ```
 
       # 参考
       - Argo CD のデフォルトの同期間隔は最大3分です。[Automated Sync Policy](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/#automated-sync-semantics)
