@@ -416,6 +416,7 @@ issues:
           - チャートは[argo-helm](https://github.com/argoproj/argo-helm)にある[argocd-image-updater](https://github.com/argoproj/argo-helm/tree/main/charts/argocd-image-updater)を使用する
           - Namespaceは`argocd`を指定
           - 以下の内容を`value.yaml`に記載し、`helm install`コマンドの引数に指定する
+            ※<リージョン名><AWSアカウント名>は適宜置換
           ```
           extraEnv:
             - name: AWS_REGION
