@@ -1,12 +1,15 @@
 issues:
   - title: 基本的な可用性設定
     body: |
+      # 本Issueでやること
+      **本issueは内容を確認したらクローズしてください。**
+
       K8sのワークロードに対する基本的な可用性設定としては以下の3つがあります。
       - Service を使った負荷分散
       - Workload リソースを使ったPod作成
       - restartPolicy を使ったPodの再起動
       
-      これらについて解説します。本issueは内容を確認したらクローズしてください。
+      これらについて解説します。
 
       ## Service を使った負荷分散
       Serviceを使うことで、PodのIPアドレスが変わっても、ServiceのIPアドレスを通じてアクセスできるようになります。これにより、Podの再起動やスケールアウト/スケールイン時でも、クライアントは常に同じServiceのIPアドレスを使用できます。
@@ -21,6 +24,7 @@ issues:
       
   - title: Podにヘルスチェックを設定する（probe）
     body: |
+      # 本Issueでやること
       Podにヘルスチェックを設定することで、Podの状態を監視し、異常が発生した場合に自動的に再起動や再スケジュールを行うことができます。これにより、アプリケーションの可用性が向上します。
       Podのヘルスチェック機能には3種類あります。
 
@@ -29,17 +33,63 @@ issues:
       - Startup Probe: Podの起動が完了したかを確認し、起動中のPodに対してはLivenessやReadinessのチェックを行いません。
 
       # プラクティス
-      - フロントエンドおよびバックエンドのPodにLivenessおよびReadiness Probeを設定する
+      - フロントエンドおよびバックエンドのPodにLivenessおよびReadiness Probeを設定する (既存の`deployment.yaml`を修正する) ([参考：Configure Liveness, Readiness and Startup Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/))
         - typeは`httpGet`
         - pathは以下の通り
           - フロントエンド: `/`
           - バックエンド: `/api/message`
         - portはコンテナの待ち受けポートを指定する
-        - 監視間隔は何秒でもいいが、失敗する順番は rediness -> liveness にすること
+        - 監視間隔は何秒でもいいが、失敗する順番は readiness -> liveness にすること
           - こうすることでまずServiceのトラフィックを受け付けないようにし、次にPodを再起動することができる
+
+      # 参考
+      - [Podのライフサイクル](https://kubernetes.io/ja/docs/concepts/workloads/pods/pod-lifecycle/)
+
+      # 確認
+      - 以下コマンドを実行し、設定が反映されたこと
+        ```
+        kubectl get deploy frontend -o yaml
+        kubectl get deploy backend  -o yaml
+        ```
+      - 以下コマンドを実行し、liveness probeが効いてpod再起動すること。「RESTARTS:1」になること
+        - frontend
+        ```
+        FRONT_POD=$(kubectl get pod -l app=frontend -o jsonpath='{.items[0].metadata.name}')
+        kubectl exec -it "$FRONT_POD" -- sh -c 'kill 1'
+        kubectl get pod -l app=frontend
+        kubectl describe pod "$FRONT_POD" | sed -n '/Events:/,$p'
+        ```
+
+        - backend
+        ```
+        BACK_POD=$(kubectl get pod -l app=backend -o jsonpath='{.items[0].metadata.name}')
+        kubectl exec -it "$BACK_POD" -- sh -c 'kill 1'
+        kubectl get pod -l app=backend
+        kubectl describe pod "$BACK_POD" | sed -n '/Events:/,$p'
+        ```
+
+        想定結果例
+        ```
+        tie304119@S2504C10442-T1:~/cloudnative-practice/cloudnative-practice/codes/frontend/k8s$ kubectl describe pod "$FRONT_POD" | sed -n '/Events:/,$p'
+        Events:
+          Type    Reason     Age                  From               Message
+          ----    ------     ----                 ----               -------
+          Normal  Scheduled  9m50s                default-scheduler  Successfully assigned default/frontend-6665699b77-pql5l to i-0cdd1deb45a62afa1
+          Normal  Pulled     56s (x2 over 9m44s)  kubelet            spec.containers{frontend}: Container image "456247443832.dkr.ecr.ap-northeast-1.amazonaws.com/frontend:v2" already present on machine and can be accessed by the pod
+          Normal  Created    56s (x2 over 9m44s)  kubelet            spec.containers{frontend}: Container created
+          Normal  Started    56s (x2 over 9m44s)  kubelet            spec.containers{frontend}: Container started
+        tie304119@S2504C10442-T1:~/cloudnative-practice/cloudnative-practice/codes/frontend/k8s$ 
+        tie304119@S2504C10442-T1:~/cloudnative-practice/cloudnative-practice/codes/frontend/k8s$ kubectl get pod -l app=frontend
+        NAME                        READY   STATUS    RESTARTS        AGE
+        frontend-6665699b77-pql5l   1/1     Running   1 (4m30s ago)   13m
+        tie304119@S2504C10442-T1:~/cloudnative-practice/cloudnative-practice/codes/frontend/k8s$ 
+        ```
 
   - title: Podにgracefulshutdownを設定する
     body: |
+      # 本Issueでやること
+      Pod終了時のリクエストロスを防ぐため、graceful shutdownを設定します。
+
       ## gracefulshutdownとは？
       
       アプリケーションのPodが停止する際に、安全に終了するための仕組みです。
@@ -73,9 +123,19 @@ issues:
       - **terminationGracePeriodSeconds**：30秒程度（preStop時間 + アプリケーション終了時間）
 
       # プラクティス
-      - フロントエンドおよびバックエンドのPodにgracefulshutdownを設定する
+      - フロントエンドおよびバックエンドのPodにgracefulshutdownを設定する (既存の`deployment.yaml`を修正する)
         - `terminationGracePeriodSeconds`を設定して、Podが停止するまでの猶予時間を設定する
         - `preStop`フックを設定して、Serviceからの除外を待つためにSleepさせる
+
+      # 参考
+      - [参考：コンテナライフサイクルフック](https://kubernetes.io/ja/docs/concepts/containers/container-lifecycle-hooks/)
+
+      # 確認
+      - 以下コマンドを実行し、設定が反映されたこと
+      ```
+      kubectl get deploy frontend -o yaml | grep -E "terminationGracePeriodSeconds|preStop" -n
+      kubectl get deploy backend -o yaml | grep -E "terminationGracePeriodSeconds|preStop" -n
+      ```
 
   - title: Podにaffinityを設定する
     body: |
