@@ -524,12 +524,12 @@ issues:
 
       - ArgoCDのWEB画面にて、podのイベントログに「Successfully pulled image」のログが表示されること。
 
-      - EKSでうごいてるpodのイメージが変わること。
+      - EKSで動いているpodのイメージが変わること。
 
       - GitHubのcommit履歴(以下URL)を確認し、argocdによるcommit `build: automatic update of frontend`があること。
         https://github.com/<githubアカウント名>/cloudnative-practice/commits/main/
 
-      - `kubectl logs -n argocd deployment/argocd-image-updater-controller --tail=30`コマンドを実行し`images_updated=1 errors=0`となること。
+      - `kubectl logs -n argocd deployment/argocd-image-updater-controller`コマンドを実行し`images_updated=1 errors=0`となること。
         ログ出力例
         ```
         time="2026-03-03T23:28:08Z" level=info msg="Processing results: applications=1 images_considered=1 images_skipped=0 images_updated=1 errors=0" controller=imageupdater controllerGroup=argocd-image-updater.argoproj.io controllerKind=ImageUpdater imageUpdater_name=backend-image-updater imageUpdater_namespace=argocd logger=reconcile
