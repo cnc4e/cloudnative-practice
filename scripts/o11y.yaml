@@ -76,9 +76,12 @@ issues:
             
           # 確認
           1. codes/frontend/k8s/deployment.yaml のレプリカ数を0に変更する。
-          2. frontendのpod数が0になったことを確認する。
-          3. しばらく待った後、マネコンで CloudWatch > アラーム > アラーム状態 でアラーム状態になることを確認。
-          4. codes/frontend/k8s/deployment.yaml のレプリカ数を元に戻す。
+          2. git pushする。 (CICDが動き、実機の設定が変更される)
+          3. frontendのpod数が0になったことを確認する。
+          4. しばらく待った後、マネコンで CloudWatch > アラーム > アラーム状態 でアラーム状態になることを確認。
+          5. codes/frontend/k8s/deployment.yaml のレプリカ数を元に戻す。
+          6. git pushする。 (CICDが動き、実機の設定が変更される)
+          7. frontendのpod数が元のレプリカ数に戻ったことを確認する
 
   - title: メッセージに基づくアラートを設定する
     body: |
