@@ -51,7 +51,7 @@ issues:
         kubectl get deploy frontend -o yaml
         kubectl get deploy backend  -o yaml
         ```
-      - 以下コマンドを実行し、liveness probeが効いてpod再起動すること
+      - 以下コマンドを実行し、liveness probeが効いてpod再起動すること。「RESTARTS:1」になること
         - frontend
         ```
         FRONT_POD=$(kubectl get pod -l app=frontend -o jsonpath='{.items[0].metadata.name}')
@@ -66,6 +66,23 @@ issues:
         kubectl exec -it "$BACK_POD" -- sh -c 'kill 1'
         kubectl get pod -l app=backend
         kubectl describe pod "$BACK_POD" | sed -n '/Events:/,$p'
+        ```
+
+        想定結果例
+        ```
+        tie304119@S2504C10442-T1:~/cloudnative-practice/cloudnative-practice/codes/frontend/k8s$ kubectl describe pod "$FRONT_POD" | sed -n '/Events:/,$p'
+        Events:
+          Type    Reason     Age                  From               Message
+          ----    ------     ----                 ----               -------
+          Normal  Scheduled  9m50s                default-scheduler  Successfully assigned default/frontend-6665699b77-pql5l to i-0cdd1deb45a62afa1
+          Normal  Pulled     56s (x2 over 9m44s)  kubelet            spec.containers{frontend}: Container image "456247443832.dkr.ecr.ap-northeast-1.amazonaws.com/frontend:v2" already present on machine and can be accessed by the pod
+          Normal  Created    56s (x2 over 9m44s)  kubelet            spec.containers{frontend}: Container created
+          Normal  Started    56s (x2 over 9m44s)  kubelet            spec.containers{frontend}: Container started
+        tie304119@S2504C10442-T1:~/cloudnative-practice/cloudnative-practice/codes/frontend/k8s$ 
+        tie304119@S2504C10442-T1:~/cloudnative-practice/cloudnative-practice/codes/frontend/k8s$ kubectl get pod -l app=frontend
+        NAME                        READY   STATUS    RESTARTS        AGE
+        frontend-6665699b77-pql5l   1/1     Running   1 (4m30s ago)   13m
+        tie304119@S2504C10442-T1:~/cloudnative-practice/cloudnative-practice/codes/frontend/k8s$ 
         ```
 
   - title: Podにgracefulshutdownを設定する
