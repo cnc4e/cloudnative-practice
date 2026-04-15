@@ -25,13 +25,16 @@ issues:
   #     helmの使い方は次を参考にすること。
   #     - [Helmの使い方](https://helm.sh/ja/docs/intro/using_helm/)
   #     - [Helmの使い方を3分で理解する](https://qiita.com/MahoTakara/items/3c509235cc18bd407f07)
+
   - title: Runner用のServiceAccount、Role、RoleBindingsを作成する
     body: |
+      # 本Issueでやること
       Runner Pod が K8s 内部のリソースを操作出来るように関連リソースを作成する。  
       コードは`codes`ディレクトリ配下に`actions/k8s`ディレクトリを作成し、そこにコードを配置する。  
-      コードを作成し、リソースのデプロイが完了したらPRを出す。
+      コードを作成し、リソースのデプロイが完了したらPRを出す。  
+      ※terraformの「kubernetes_*」リソースでも作成できるが、今回はK8sマニフェストで作成する。
 
-      # 欲しいもの
+      # 本Issueで作成するもの
       - Runner用のNamespace
         - 名前は`arc-runners`
       - Runner用のServiceAccount
@@ -48,8 +51,18 @@ issues:
         - 名前は`arc-runner`
         - Namespaceは`arc-runners`
         - `arc-runner` ServiceAccount に対して `arc-runner` Role をバインドする
+      # 確認
+      - 必要なリソースが作成されたことを確認する。
+      ```
+      kubectl get ns arc-runners
+      kubectl get sa arc-runner -n arc-runners
+      kubectl get role arc-runner -n arc-runners
+      kubectl get rolebinding arc-runner -n arc-runners
+      ```
+
   - title: GitHub Actions Runnerをセットアップする
     body: |
+      # 本Issueでやること
       CIを実行するためのGitHub Actions Runnerをセットアップする。  
       コードは`codes/actions/k8s`ディレクトリに配置する。  
       コードを作成し、リソースのデプロイが完了したらPRを出す。
@@ -66,48 +79,60 @@ issues:
       # 前提
       - Runner用のServiceAccount、Role、RoleBindingsを作成する
 
-      # 欲しいもの
-      - ARC
-        - helmを使いインストール
-          - インストール方法は[Actions Runner Controller のクイックスタート](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller/quickstart-for-actions-runner-controller)を参考にする
+      # 事前作業
+      - HELMをインストールする
+        - [Installing Helm](https://helm.sh/docs/intro/install/)を参考にインストールする
+
+      # 本Issueで作成するもの
+      - Actions Runner Controller(ARC)
+        - helmを使い、ARCをインストールする
+          - インストール方法は[Installing Actions Runner Controller](https://docs.github.com/en/actions/tutorials/use-actions-runner-controller/get-started#installing-actions-runner-controller)を参考にする
         - `helm install`のコマンド全文を`actions/k8s`ディレクトリ配下の`README.md`に書いて保存すること
-      - GitHub認証情報を格納した K8s Secret
-        - [参考](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller/authenticating-to-the-github-api#deploying-using-personal-access-token-classic-authentication)
+          - ※どのリポジトリのどのチャートを使ったかを後々知りたい場合があるため、情報として残しておくことを推奨。
+      - GitHub認証情報を格納した K8s Secret の作成
+        ※補足：GitHubの認証情報をKubernetesのSecretとして管理することで、マニフェストへ直接記載する必要がなくなる。これにより、Gitリポジトリに認証情報を含めてしまい、漏洩するリスクを防ぐことができる。
+        - [参考：ARCをGitHub APIに認証する方法](https://docs.github.com/ja/actions/how-tos/manage-runners/use-actions-runner-controller/authenticate-to-the-api)
         - 名前は`pre-defined-secret`など任意
         - 認証方法は`PAT`または`GitHub App`を使用する
           - `PAT`の方が設定は楽。ただしトークンは個人に紐づく
           - `GitHub App`の方は個人に紐づかないため実PJ向き
-        - 認証情報を格納したSecretはマニフェストにせずGitに**含めない**こと
-          - Gitに認証情報を含めると漏洩する可能性があるため
       - RunnerScaleSet
-        - helmを使いインストール
-          - インストール方法は[Actions Runner Controller のクイックスタート](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners-with-actions-runner-controller/quickstart-for-actions-runner-controller#configuring-a-runner-scale-set)を参考にする
+        - helmを使い、RunnerScaleSetをインストールする
+          - インストール方法は[Configuring a runner scale set](https://docs.github.com/en/actions/tutorials/use-actions-runner-controller/get-started#configuring-a-runner-scale-set)を参考にする
           - Namespaceは`arc-runners`を指定
-        - `helm install`のコマンド全文を`actions/k8s`ディレクトリ配下の`README.md`に書いて保存すること
-        - valueファイルを作成し`helm install`コマンドの引数に指定する
-          - ファイル名は`arc-runner-set-value.yaml`など任意
-          - `githubConfigUrl`に自身の`cloudnative-practice`リポジトリを指定
-          - `githubConfigSecret`にGitHubの認証情報を格納したSecretの名前を指定
-          - `template.spec.serviceAccountName`に`arc-runner`を指定
-          - 以下、valueファイルのサンプル
-            ``` yaml
+          - valueファイルを作成し`helm install`コマンドの引数に指定する
+            - ファイル名は`arc-runner-set-value.yaml`など任意
+            - `githubConfigUrl`に自身の`cloudnative-practice`リポジトリを指定
+            - `githubConfigSecret`にGitHubの認証情報を格納したSecretの名前を指定
+            - `template.spec.serviceAccountName`に`arc-runner`を指定
+            - 以下、valueファイルのサンプル
+            ```
             githubConfigUrl: https://github.com/ORG/REPO
             githubConfigSecret: pre-defined-secret
+            minRunners: 1
+            maxRunners: 3
+            labels:
+              arc-runner-set: "true"
             template:
               spec:
                 serviceAccountName: arc-runner
             ```
-        - `helm install`のコマンド全文を`actions/k8s`ディレクトリ配下の`README.md`に書いて保存すること
+          - `helm install`のコマンド全文を`actions/k8s`ディレクトリ配下の`README.md`に書いて保存すること
 
       # 確認
-      RunnerScaleSetデプロイ後、GitHubの自身の`cloudnative-practice`リポジトリで settings > Actuins > Runners を開きRunnerがオンラインになっていることを確認する。
+      - HELMインストール確認: `helm version`コマンドを実行し、helmバージョンが表示されること
+      - ARCインストール確認: `kubectl get pods -n arc-systems`, `helm list -n arc-systems`コマンドを実行し、表示されること
+      - シークレット作成確認: `kubectl get secret -n arc-runners`コマンドを実行し、シークレットが表示されること
+      - RunnerScaleSet設定確認: `helm list -A`, `kubectl get pods -n arc-systems`コマンドを実行し、RunnerScaleSetが表示されること
 
       # 参考
       helmの使い方は次を参考にすること。
       - [Helmの使い方](https://helm.sh/ja/docs/intro/using_helm/)
       - [Helmの使い方を3分で理解する](https://qiita.com/MahoTakara/items/3c509235cc18bd407f07)
+
   - title: GitHub Actions の動作確認をする
     body: |
+      # 本Issueでやること
       セットアップしたセルフホストランナーでワークフローが実行できることを確認する。
       動作確認用に手動トリガーで実行するワークフローを作成する。
       GitHub Actionsのワークフローは`.github/workflows/`ディレクトリに定義ファイルを配置する。
@@ -115,9 +140,8 @@ issues:
       # 前提
       - GitHub Actions Runnerのセットアップが完了していること
 
-      # やること
-
-      - 以下の内容の`test.yml`をリポジトリのルート直下``.github/workflows/``ディレクトリに作成する。`runs-on`に settings > Actuins > Runners で確認できるRunner名を指定
+      # 作業手順
+      - 以下の内容の`test.yaml`をリポジトリのルート直下`.github/workflows/`ディレクトリに作成する。
         ```yaml
         name: Self-hosted Runner Test
 
@@ -131,12 +155,13 @@ issues:
               - name: 確認用の echo 出力
                 run: echo "🎉 Self-hosted Runner でワークフローが実行されました！"
         ```
-      - 変更をコミットし、GitHubにプッシュする。ブランチをmainにマージする。（PRは不要）
+      - 変更内容をコミットしてGitHubへプッシュし、その後、mainブランチに対してPRを作成・マージする。
       - GitHubで Actions タブを開き、左のワークフロー一覧に`Self-hosted Runner Test`が表示されていることを確認
       - `Self-hosted Runner Test`を選択し`Run workflow`ボタンをクリックしてワークフローを実行
       - しばらくしてから画面をリロードするとワークフローが実行される。茶色は実行中、緑は成功、赤は失敗
       - 緑になったらワークフローを選択。実行されたジョブが表示される。`test-runner`ジョブを選択し、ジョブの詳細を表示
       - `確認用の echo 出力`のステップを選択し、`🎉 Self-hosted Runner でワークフローが実行されました！`と表示されていれば成功
+
   - title: Runner に Pod Identity でIAMロールをアタッチする
     body: |
       Runner が ECR にアクセスできるように、Pod Identity を使って IAM ロールをアタッチする。
@@ -412,49 +437,85 @@ issues:
           - ns:argocd
           - sa:argocd-image-updater
         - EKSクラスタ名はできればeksモジュールからoutputで取得すること
+
   - title: フロントエンドのイメージを自動更新する
     body: |
+      # 本Issueでやること
       ECRのイメージ更新を検知してフロントエンドのDeploymentを自動的に更新する。
+      コードはcodes/frontend/k8sディレクトリに配置する。
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
 
       # 前提
       - Argo CD ImageUpdater に Pod Identity でIAMロールをアタッチする
 
-      # 欲しいもの
-      - フロントエンドのアプリケーションに ImageUpdater の自動更新設定を追加する
-        - `codes/frontend/k8s/application.yaml`に[例](https://argocd-image-updater.readthedocs.io/en/stable/examples/)を参考に設定を追加する
-          - イメージバージョンの書き込み方式は`git`にする
-          - イメージリストは`frontend`をエイリアスに追加
-          - 更新戦略は最新イメージにする
+      # 本Issueで作成するもの
+      - ImageUpdaterのCRD(カスタムリソース定義)を作成する ([参考：ImageUpdater with Git write-back](https://argocd-image-updater.readthedocs.io/en/stable/examples/#imageupdater-with-git-write-back))
+        - ファイル名は`ImageUpdater.yaml`など任意
+        - kindは`ImageUpdater`
+        - namespaceは`argocd`
+        - spec.writeBackConfig.methodは`git`
+        - spec.writeBackConfig.gitConfig.repoURLは`https://github.com/<ユーザ名>/cloudnative-practice`等の自身の`cloudnative-practice`リポジトリを指定
+        - spec.writeBackConfig.gitConfig.branchは`main`
+        - spec.writeBackConfig.gitConfig.writeBackTargetは`kustomize`
+        - spec.applicationRefs.namePatternは`frontend`などのアプリケーション名を指定
+        - spec.applicationRefs.images.aliasは`frontend`など任意の名前を指定
+        - spec.applicationRefs.images.imageNameは`<AWSアカウント名>.dkr.ecr.<リージョン名>.amazonaws.com/frontend`などの自身のECRのイメージURLを指定
+        - spec.applicationRefs.images.commonUpdateSettings.updateStrategyは`newest-build`を指定
+
+      # 参考
+      - `application.yaml`のannnotationsにImageUpdaterの情報を記載する方法もあるが、そちらはレガシーな方式のため、今回はImageUpdaterのCRDを作成する方式を採用する。
 
       # 確認
-      - K8sで動くフロンエンドのDeploymentが`フロンエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する`でビルドしたイメージに更新されることを確認する
+      - Issue`フロントエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する`でビルドしたイメージが、ImageUpdaterにより更新と検知され、Deploymentの更新が行われることを確認する
+
   - title: バックエンドのイメージを自動更新する
     body: |
+      # 本Issueでやること
       ECRのイメージ更新を検知してバックエンドのDeploymentを自動的に更新する。
+      コードはcodes/backend/k8sディレクトリに配置する。
+      コードを作成し、リソースのデプロイが完了したらPRを出す。
 
       # 前提
       - Argo CD ImageUpdater に Pod Identity でIAMロールをアタッチする
 
-      # 欲しいもの
-      - バックエンドのアプリケーションに ImageUpdater の自動更新設定を追加する
-        - `codes/backend/k8s/application.yaml`に[例](https://argocd-image-updater.readthedocs.io/en/stable/examples/)を参考に設定を追加する
-          - イメージバージョンの書き込み方式は`git`にする
-          - イメージリストは`backend`をエイリアスに追加
-          - 更新戦略は最新イメージにする
+      # 本Issueで作成するもの
+      - ImageUpdaterのCRD(カスタムリソース定義)を作成する ([参考：ImageUpdater with Git write-back](https://argocd-image-updater.readthedocs.io/en/stable/examples/#imageupdater-with-git-write-back))
+        - ファイル名は`ImageUpdater.yaml`など任意
+        - kindは`ImageUpdater`
+        - namespaceは`argocd`
+        - spec.writeBackConfig.methodは`git`
+        - spec.writeBackConfig.gitConfig.repoURLは`https://github.com/<ユーザ名>/cloudnative-practice`等の自身の`cloudnative-practice`リポジトリを指定
+        - spec.writeBackConfig.gitConfig.branchは`main`
+        - spec.writeBackConfig.gitConfig.writeBackTargetは`kustomize`
+        - spec.applicationRefs.namePatternは`backend`などのアプリケーション名を指定
+        - spec.applicationRefs.images.aliasは`backend`など任意の名前を指定
+        - spec.applicationRefs.images.imageNameは`<AWSアカウント名>.dkr.ecr.<リージョン名>.amazonaws.com/backend`などの自身のECRのイメージURLを指定
+        - spec.applicationRefs.images.commonUpdateSettings.updateStrategyは`newest-build`を指定
 
       # 確認
-      - K8sで動くバックエンドのDeploymentが`バックエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する`でビルドしたイメージに更新されることを確認する
+      - Issue`バックエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する`でビルドしたイメージが、ImageUpdaterにより更新と検知され、Deploymentの更新が行われることを確認する
+
   - title: アプリケーションの更新からDeploymentの更新まで一気通貫で確認する
     body: |
+      # 本Issueでやること
       アプリケーション更新 > GitHub Actions (イメージビルド&プッシュ) > Argo CD ImageUpdater (イメージ更新) > Argo CD (マニフェストデプロイ) まで一気通貫で確認する。
 
       # 前提
       - フロントエンドのイメージを自動更新する
       - バックエンドのイメージを自動更新する
 
-      # やること
-      - フロントエンドまたはバックエンドのアプリケーションコードを更新する
-      - しばらく(10分程)待ち、K8s の Deployment が更新されることを確認する
+      # 作業手順
+      - フロントエンドまたはバックエンドのアプリケーションコードを更新し、GitHubにpushする。
+        - `codes/frontend/app`配下に任意のファイルを作成するでも良い
+      - しばらく(10分程)待ち、以下の動作が実行されることを確認する
+        - GitHub Actionsが実行され、イメージがビルドされてECRにプッシュされることを確認する
+        - Argo CD ImageUpdater がイメージの更新を検知し、K8sマニフェストを更新することを確認する
+        - Argo CD がマニフェストの更新を検知し、Deployment が更新されることを確認する
+        - `kubectl logs -n argocd deployment/argocd-image-updater-controller --tail=30`コマンドを実行し`images_updated=1 errors=0`となること。
+          ログ出力例
+          ```
+          time="2026-03-03T23:28:08Z" level=info msg="Processing results: applications=1 images_considered=1 images_skipped=0 images_updated=1 errors=0" controller=imageupdater controllerGroup=argocd-image-updater.argoproj.io controllerKind=ImageUpdater imageUpdater_name=backend-image-updater imageUpdater_namespace=argocd logger=reconcile
+          ```
 
       # 参考
       - Argo CD のデフォルトの同期間隔は最大3分です。[Automated Sync Policy](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/#automated-sync-semantics)

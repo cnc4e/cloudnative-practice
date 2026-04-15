@@ -1,27 +1,46 @@
 issues:
   - title: Terraformバックエンドを作成する
     body: |
-      Terraformのtfstateを保存するためのバックエンドを作成する**tfbackend**モジュールを作成する。  
+      # 本Issueでやること
+      Terraformの状態ファイル（tfstate）を保存するための「バックエンド」を作成する。
+      今回はAWSのS3を使って、tfstateをリモートで管理できるようにする。
       コードは`codes`ディレクトリ配下に`tfbackend`ディレクトリを作成し、そこにコードを配置する。  
       コードを作成し、リソースのデプロイが完了したらPRを出す。
       
-      # 欲しいもの
-      - S3バケット(state格納用)
-        - バージョニングを有効
-      - DynamoDB(排他制御用)
+      # 本Issueで作成するもの
+      - S3バケット(tfstate格納用)
+        - バージョニングを有効化　※過去の状態を保持するため
+        - 排他制御を有効化　※複数人での同時実行によるtfstateの破損を防止するため
       
-      # その他
-      バックエンドを作成するコード自体は初めリモートバックエンドの設定をせずにリソース群をデプロイします。
-      S3とDynamoDBをデプロイしたらリモートバックエンドの設定を行い、tfstateをリモートバックエンドに格納します。
-      
-      参考:[s3](https://developer.hashicorp.com/terraform/language/backend/s3)
+      # 手順
+      1. `codes/tfbackend`ディレクトリを作成し、そこにtfstateを保存するためのS3バケットを作成するコードを書く。
+      2. コードを作成したら、デプロイしてS3バケットを作成する。
+      3. 以下を.tfファイルのterraform{}ブロック内に追記し再度デプロイする。※S3バケット作成前に追記すると、エラーになるため注意。
+        ```
+        backend "s3" {
+            bucket = "<作成したS3バケット名>"
+            key    = "tfbackend.tfstate"
+            region = "<リージョン>"
+            use_lockfile = true
+            encrypt      = true
+            }
+        ```
+
+      # 確認
+      - AWSコンソール上でリソースが作成されたこと。対象：S3
+      - `aws s3 ls s3://[S3バケット名]/`コマンドを実行し、S3にtfstateが保存されていること。
+
+      # 参考情報
+      - [【Terraform】S3を利用したリモートバックエンド設定](https://murablog.net/2025/03/23/%E3%80%90terraform%E3%80%91s3%E3%82%92%E5%88%A9%E7%94%A8%E3%81%97%E3%81%9F%E3%83%AA%E3%83%A2%E3%83%BC%E3%83%88%E3%83%90%E3%83%83%E3%82%AF%E3%82%A8%E3%83%B3%E3%83%89%E8%A8%AD%E5%AE%9A/)
+
   - title: ネットワークを作成する
     body: |
+      # 本Issueでやること
       VPCをおよびサブネットを作成する**network**モジュールを作成する。  
       コードは`codes`ディレクトリ配下に`network`ディレクトリを作成し、そこにコードを配置する。
       コードを作成し、リソースのデプロイが完了したらPRを出す。
       
-      # 欲しいもの
+      # 本Issueで作成するもの
       - VPC
         - CIDRは任意
         - DNSホスト名を有効
@@ -42,3 +61,10 @@ issues:
         - 各サブネット ID
           - パブリック・プライベートごとにリスト型で出力
 
+      # 確認
+      - AWSコンソール上でリソースが作成されたこと。対象：VPC、サブネット、ルートテーブル、インターネットゲートウェイ、NATゲートウェイ
+
+      # 参考情報
+      - [TerraformでVPCを構築してみる](https://qiita.com/kakita-yzrh/items/cccf954daaa3de59d370)
+      - [【Terraform】まずはシンプルなコードでVPCとサブネットを構築してみましょう](https://persol-serverworks.co.jp/blog/ec2/terraformvpc.html)
+      - [【AWS】NAT GatewayをTerraformで書くと…](https://qiita.com/ymd65536/items/327c05a8685d375a7e77)
