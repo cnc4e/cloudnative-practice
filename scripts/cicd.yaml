@@ -162,8 +162,12 @@ issues:
       - 緑になったらワークフローを選択。実行されたジョブが表示される。`test-runner`ジョブを選択し、ジョブの詳細を表示
       - `確認用の echo 出力`のステップを選択し、`🎉 Self-hosted Runner でワークフローが実行されました！`と表示されていれば成功
 
+      # 参考
+      - [example](https://github.com/cnc4e/cloudnative-practice/tree/main/example/actions/github)
+
   - title: Runner に Pod Identity でIAMロールをアタッチする
     body: |
+      # 本Issueでやること
       Runner が ECR にアクセスできるように、Pod Identity を使って IAM ロールをアタッチする。
       コードは`codes/actions/terraform`ディレクトリに配置する。
       コードを作成し、リソースのデプロイが完了したらPRを出す。
@@ -181,24 +185,36 @@ issues:
 
       EKSにはPodにIAMロールをアタッチする方法が2つあるが、EKSオートモードでは [Pod Identity](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/pod-identities.html)がデフォルトで使えるため本プラクティスでは Pod Identity を使用する。
 
-      # 欲しいもの
-
-      - Runner Podに付与するIAMロール
-        - 権限は`AmazonEC2ContainerRegistryPowerUser`
+      # 本Issueで作成するもの
+      - Runner Podに付与するIAMロール ([リソース: aws_iam_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role))
         - IAMロールは Pod Identity を使ってアタッチできるように信頼ポリシーを設定する
-          - `Service:pods.eks.amazonaws.com`
-          - `Action:["sts:AssumeRole","sts:TagSession"]`
-      - Pod Identity の設定 [aws_eks_pod_identity_association](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_pod_identity_association)
+          - Service:pods.eks.amazonaws.com
+          - Action:["sts:AssumeRole","sts:TagSession"]
+
+      - IAMロールに付与する権限 ([リソース: aws_iam_role_policy_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment))
+        - AmazonEC2ContainerRegistryPowerUser
+
+      - Pod Identity の設定 ([リソース: aws_eks_pod_identity_association](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_pod_identity_association))
         - Runner Pod用に作成したロールを Pod Identity にアタッチする
         - Runner Pod の Namespace と ServiceAccount は以下を指定
           - ns:arc-runners
           - sa:arc-runner
-        - EKSクラスタ名はできればeksモジュールからoutputで取得すること
+
+      - EKSクラスタ名はできればeksモジュールからoutputで取得すること(EKS側でoutputを設定し、actions側でdata.terraform_remote_stateによる読み込みが必要)
 
       # 参考
       [IAM ロールを Kubernetes サービスアカウントに割り当てる](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/pod-id-association.html)
+
+      # 確認
+      - 以下コマンドを実行し作成したリソースが確認できること
+      ```
+      aws eks list-pod-identity-associations --cluster-name <クラスタ名> --region <リージョン>
+      aws iam get-role --role-name <ロール名>
+      ```
+
   - title: ECRにログインするGitHub Actionsのワークフローを作成する
     body: |
+      # 本Issueでやること
       GitHub Actions のワークフローで ECR にアクセスできることを確認する。
       コードは`.github/workflows/`ディレクトリに配置する。
       コードを作成し、リソースのデプロイが完了したらPRを出す。
@@ -208,21 +224,31 @@ issues:
       - Runner用のServiceAccount、Role、RoleBindingsを作成する
       - Runner に Pod Identity でIAMロールをアタッチする
 
-      # 欲しいもの
+      # 本Issueで作成するもの
       - ECRへのログインステップを含んだワークフロー
         - 新規にファイルを作ってもいいし、test.ymlを改良しても良い
-        - `main`ブランチにプッシュされた時にワークフローを実行する
+        - mainブランチにプッシュされた時にワークフローを実行する (on.push.branchesにmainを指定)
           - マージ前に動作確認したければmainブランチから作業ブランチに変更するといい
-        - Runnerはセルフホストのランナー名を指定
+        - Runnerはセルフホストのランナー名を指定 (runs-onにarc-runner-setなどを指定)
         - ECRのログインには[docker/login-action@v3](https://github.com/docker/login-action)のアクションを使用
-        - `registry`にはECRのレジストリURLを指定
-          - 例: `アカウントID.dkr.ecr.リージョン.amazonaws.com`
+        - registryにはECRのレジストリURLを指定
+          - 例: アカウントID.dkr.ecr.リージョン.amazonaws.com
         - Runner にIAMロールをアタッチしているためユーザー名とパスワードは指定しない
+          - 一度「aws sts get-caller-identity」を実行するステップを追加すること
 
       # 確認
-      マージ後、ワークフローが実行され、ECRへのログインが成功することを確認する。
+      マージ後、GitHub Actions画面上でワークフローが実行され、ECRへのログインが成功することを確認する。
+
+      # 参考
+      - [公式ドキュメント：GitHub Actionsのワークフロー構文](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax)
+      - [【初心者向け】【入門】GitHub Actionsとは？書き方、デバッグ設定、runs-onやcheckoutなどの仕組みや構造も含めて徹底解説](https://qiita.com/shun198/items/14cdba2d8e58ab96cf95)
+      - [Amazon Elastic Container Serviceへのデプロイ](https://docs.github.com/ja/actions/how-tos/deploy/deploy-to-third-party-platforms/amazon-elastic-container-service)
+      - [GitHub ActionsでECRにログインする方法](https://qiita.com/pommny_dev/items/f15592a0de07f41873f2)
+
+
   - title: フロントエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する
     body: |
+      # 本Issueでやること
       GitHub Actions のワークフローでフロントエンドのイメージをビルドして ECR にプッシュする。
       コードは`.github/workflows/`ディレクトリに配置する。
       コードを作成し、リソースのデプロイが完了したらPRを出す。
@@ -237,14 +263,17 @@ issues:
       そこで、K8sでは[docker buildx](https://matsuand.github.io/docs.docker.jp.onthefly/buildx/working-with-buildx/)を使用してコンテナイメージをビルドします。
       docker buildx を使用することで、K8sのPodでDockerイメージをビルドすることができます。
 
-      # 欲しいもの
+      # 本Issueで作成するもの
       - フロントエンドのイメージをビルドして ECR にプッシュするワークフロー
         - ファイル名は`frontend.yml`など任意
-        - ワークフローは`main`ブランチにプッシュされ、`./codes/frontend/app`配下が更新た時にする
+
+        - ワークフローは`main`ブランチにプッシュされ、`./codes/frontend/app`配下が更新された時にする (on.push.branchesにmainを指定、on.push.pathsに./codes/frontend/app/**を指定)
           - マージ前に動作確認したければmainブランチから作業ブランチにし、pathsの指定を外せばいい
+
         - Runner はセルフホストのランナー名を指定
-        - 以下のステップを含む
-          - コードのチェックアウト
+
+        - 以下のステップを含む (jobs.login.stepsに以下を記載)
+          - コードのチェックアウト 
             - アクションは[actions/checkout](https://github.com/actions/checkout)を使用
           - ECRへのログイン
             - `ECRにログインするGitHub Actionsのワークフローを作成する`で作成したワークフローを参考にする
@@ -267,25 +296,27 @@ issues:
               - provenance: false
               - tags: 自身のECRのレジストリURLとイメージ名を指定
                 - タグは`イメージタグの設定`ステップで設定した`IMAGE_TAG`環境変数を使用
+
       - フロントエンドの変更
         - code/frontend/app/public/index.htmlの`<title>`タグを`Frontend Sample Build By CI`などに変更する
 
       # 確認
-      マージ後、ワークフローが実行され、ECRにフロントエンドのイメージがプッシュされることを確認する。
+      マージ後、GitHub Actions画面上でワークフローが実行され、ECRにフロントエンドのイメージがプッシュされることを確認する。
 
-      # その他
-      K8sマニフェストは更新しない。Argo CD ImageUpdater で自動的に更新されるため。
+      # 注意事項
+      `codes/frontend/k8s/deployment.yaml`内のイメージ更新はこの時点では実施しない。後続のArgo CD ImageUpdater で自動的に更新されるため。
 
   - title: バックエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する
     body: |
+      # 本Issueでやること
       GitHub Actions のワークフローでバックエンドのイメージをビルドして ECR にプッシュする。
       コードは`.github/workflows/`ディレクトリに配置する。
       コードを作成し、リソースのデプロイが完了したらPRを出す。
 
       # 前提
-      - フロンエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する
+      - フロントエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する
       
-      # 欲しいもの
+      # 本Issueで作成するもの
       - バックエンドのイメージをビルドして ECR にプッシュするワークフロー
         - ファイル名は`backend.yml`など任意
         - フロントエンドのワークフローを参考に、同じようなトリガー、ステップで作成する
@@ -293,22 +324,25 @@ issues:
         - codes/backend/app/index.jsのmessageを`CIでビルドしました`などに変更する
 
       # 確認
-      マージ後、ワークフローが実行され、ECRにフロントエンドのイメージがプッシュされることを確認する。
+      マージ後、GitHub Actions画面上でワークフローが実行され、ECRにバックエンドのイメージがプッシュされることを確認する。
 
-      # その他
-      K8sマニフェストは更新しない。Argo CD ImageUpdater で自動的に更新されるため。
+      # 注意事項
+      `codes/backend/k8s/deployment.yaml`内のイメージ更新はこの時点では実施しない。後続のArgo CD ImageUpdater で自動的に更新されるため。
+
   - title: Argo CD をインストールする
     body: |
+      # 本Issueでやること
       K8s 専用の継続的デリバリー(CD)ツールである [Argo CD](https://argo-cd.readthedocs.io/en/stable/) をインストールする。  
       コードは`codes`ディレクトリ配下に`argocd/k8s`ディレクトリを作成し、そこにコードを配置する。  
       コードを作成し、リソースのデプロイが完了したらPRを出す。
 
-      # 欲しいもの
+      # 手順
+      - K8s上に`kubectl`コマンドでNamespace`argocd`を作成する
       - Argo CD
-        - helmを使いインストール
+        - helmを使いインストールする
           - チャートは[argo-helm](https://github.com/argoproj/argo-helm)にある[argo-cd](https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd)を使用する
           - Namespaceは`argocd`を指定
-          - オプションは特に不要
+          - オプションは特に不要 (values.yaml は作成せず、デフォルト設定のままでよい)
         - `helm install`のコマンド全文を`actions/k8s`ディレクトリ配下の`README.md`に書いて保存すること
 
       # 確認
@@ -324,32 +358,39 @@ issues:
           ```
           - ブラウザで`https://localhost:8080`にアクセスする
             - セキュリティ警告は無視する
+
+      # 参考
+      - [参考:Kubernetes クラスタに Argo CD をインストールして動かす](https://zenn.dev/kou_pg_0131/articles/argocd-getting-started)
+
   - title: Argo CD のリポジトリ設定をする
     body: |
+      # 本Issueでやること
       Argo CD で自身の`cloudnative-practice`リポジトリにアクセスするための設定を行う。
 
       # 前提
       - Argo CD をインストールする
       
-      # やること
+      # 手順
       - Argo CD の Web UI にログインする
         - ログイン方法は`Argo CD をインストールする`を参照
       - Settings > Repositories を開く
       - `Connect Repo`をクリック
       - 以下のように入力して`CONNECT`
-        - Choose your connection method: `VIA http/https``
+        - Choose your connection method: `VIA http/https`
         - CONNECT REPO USING HTTP/HTTPS
           - Name: 任意(自身のGitHubアカウント名/cloudnative-practiceなど)
           - Project: default
           - Repository URL: 自身の`cloudnative-practice`リポジトリのURL（例：https://github.com/アカウント名/cloudnative-practice）
-          - Username: 任意(自身のGitHubアカウント名など)
+          - Username: 自身のGitHubアカウント名
           - Password: GitHubのPersonal Access Token(PAT)を入力
 
       # 確認
       - Settings > Repositories 画面で追加したリポジトリが表示され`CONNECTION STATUS`が`Successful`になっていることを確認する。
+
   - title: Argo CD にフロントエンドのアプリケーションを追加する
     body: |
-      フロントエンドを Argo CD で管理するためのアプリケーションを追加する。
+      # 本Issueでやること
+      フロントエンドのK8sマニフェストを Argo CD で管理するためのアプリケーションを追加する。
       コードは`codes/frontend/k8s`ディレクトリに配置する。
       コードを作成し、リソースのデプロイが完了したらPRを出す。
 
@@ -360,22 +401,31 @@ issues:
       Argo CD の設定もK8sマニフェストで管理できます。
       とくに、アプリケーションの定義は Argo CD 用のカスタムリソースである`Application`リソースで行います。
 
-      # 欲しいもの
+      # 本Issueで作成するもの
       - フロントエンドのapplicationリソース
         - [directory](https://argo-cd.readthedocs.io/en/stable/user-guide/directory/#directory)タイプのアプリケーション
-        - 名前は`frontend`など任意
-        - Namespaceは`argocd`
-        - targetRevisionは`main`ブランチを指定
-        - pathはフロントエンドのK8sマニフェストが配置されている`codes/frontend/k8s`ディレクトリを指定
-        - syncPolicyは`automated`を指定（[参考]](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/)）
-          - automatedのオプションは特にしていしない(`{}`)
+        - ファイル名は`application.yaml`
+        - metadata.namespaceは`argocd`
+        - spec.destination.namespaceは`default`
+        - spec.destination.serverは`https://kubernetes.default.svc`
+        - spec.projectは`default`
+        - spec.source.pathはフロントエンドのK8sマニフェストが配置されている`codes/frontend/k8s`ディレクトリを指定
+        - spec.source.repoURLは`https://github.com/<ユーザ名>/cloudnative-practice.git`等の自身のリポジトリのURLを指定
+        - spec.source.targetRevisionは`main`ブランチを指定
+        - spec.source.kustomizeを有効化する
+          - kustomizeのオプションは特に指定しない(`{}`)
+        - spec.syncPolicy.automatedを有効化する（[参考](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/)）
+          - automatedのオプションは特に指定しない(`{}`)
 
       # 確認
       - Argo CD の Web UI でアプリケーションが追加されていることを確認する
       - また、追加したアプリケーションの`SYNC STATUS`が`Synced`になっていることを確認する
+      - GitHubのWEB画面で`spec.source.path`で指定したディレクトリを開き、Argo CDのWEB UIの表示と同じファイルが存在することを確認する
+
   - title: Argo CD にバックエンドのアプリケーションを追加する
     body: |
-      バックエンドを Argo CD で管理するためのアプリケーションを追加する。
+      # 本Issueでやること
+      バックエンドのK8sマニフェストを Argo CD で管理するためのアプリケーションを追加する。
       コードは`codes/backend/k8s`ディレクトリに配置する。
       コードを作成し、リソースのデプロイが完了したらPRを出す。
 
@@ -386,19 +436,27 @@ issues:
       Argo CD の設定もK8sマニフェストで管理できます。
       とくに、アプリケーションの定義はK8sの`Application`リソースで行います。
 
-      # 欲しいもの
+      # 本Issueで作成するもの
       - バックエンドのapplicationリソース
-        - [ここ](https://argo-cd.readthedocs.io/en/stable/user-guide/directory/#directory)を参考にする
-        - 名前は`backend`など任意
-        - Namespaceは`argocd`
-        - targetRevisionは`main`を指定
-        - pathはバックエンドのK8sマニフェストが配置されている`codes/backend/k8s`ディレクトリを指定
-        - syncPolicyは`automated`を指定（[参考]](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/)）
-          - automatedのオプションは特にしていしない(`{}`)
+        - [directory](https://argo-cd.readthedocs.io/en/stable/user-guide/directory/#directory)タイプのアプリケーション
+        - ファイル名は`application.yaml`
+        - metadata.namespaceは`argocd`
+        - spec.destination.namespaceは`default`
+        - spec.destination.serverは`https://kubernetes.default.svc`
+        - spec.projectは`default`
+        - spec.source.pathはバックエンドのK8sマニフェストが配置されている`codes/backend/k8s`ディレクトリを指定
+        - spec.source.repoURLは`https://github.com/<ユーザ名>/cloudnative-practice.git`等の自身のリポジトリのURLを指定
+        - spec.source.targetRevisionは`main`ブランチを指定
+        - spec.source.kustomizeを有効化する
+          - kustomizeのオプションは特に指定しない(`{}`)
+        - spec.syncPolicy.automatedを有効化する（[参考](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/)）
+          - automatedのオプションは特に指定しない(`{}`)
 
       # 確認
       - Argo CD の Web UI でアプリケーションが追加されていることを確認する
-      - また、追加したアプリケーションの`SYNC STATUS`が`Synced`になっていることを確認する
+      - 追加したアプリケーションの`SYNC STATUS`が`Synced`になっていることを確認する
+      - GitHubのWEB画面で`spec.source.path`で指定したディレクトリを開き、Argo CDのWEB UIの表示と同じファイルが存在することを確認する
+
   - title: Argo CD ImageUpdater をインストール
     body: |
       ECRにプッシュしたイメージを Argo CD で自動的に更新するための拡張機能 [ImageUpdater](https://argocd-image-updater.readthedocs.io/en/stable/) をインストールする。
