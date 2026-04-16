@@ -16,5 +16,6 @@ spec:
     path: ./example/frontend/k8s
     repoURL: https://github.com/moriryota62/cloudnative-practice
     targetRevision: main
+    kustomize: {}
   syncPolicy:
     automated: {}
