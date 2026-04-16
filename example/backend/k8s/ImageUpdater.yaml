@@ -8,7 +8,7 @@ spec:
   writeBackConfig:
     method: "git"
     gitConfig:
-      repository: "https://github.com/skwt20/cloudnative-practice"
+      repository: "https://github.com/moriryota62/cloudnative-practice"
       branch: "main"
       writeBackTarget: "kustomize"
   applicationRefs:
