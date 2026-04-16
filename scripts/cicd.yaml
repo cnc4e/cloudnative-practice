@@ -584,6 +584,11 @@ issues:
       - `application.yaml`のannnotationsにImageUpdaterの情報を記載する方法もあるが、そちらはレガシーな方式のため、今回はImageUpdaterのCRDを作成する方式を採用する。
 
       # 確認
+      - 以下コマンドを実行し、ImageUpdaterが動いていることを確認する
+        ```
+        kubectl get all -A | grep image-updater
+        kubectl -n argocd get imageupdater <ImageUpdater名> -o yaml
+        ```
       - Issue`フロントエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する`でビルドしたイメージが、ImageUpdaterにより更新と検知され、Deploymentの更新が行われることを確認する
 
   - title: バックエンドのイメージを自動更新する
@@ -611,6 +616,11 @@ issues:
         - spec.applicationRefs.images.commonUpdateSettings.updateStrategyは`newest-build`を指定
 
       # 確認
+      - 以下コマンドを実行し、ImageUpdaterが動いていることを確認する
+        ```
+        kubectl get all -A | grep image-updater
+        kubectl -n argocd get imageupdater <ImageUpdater名> -o yaml
+        ```
       - Issue`バックエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する`でビルドしたイメージが、ImageUpdaterにより更新と検知され、Deploymentの更新が行われることを確認する
 
   - title: アプリケーションの更新からDeploymentの更新まで一気通貫で確認する
@@ -625,15 +635,25 @@ issues:
       # 作業手順
       - フロントエンドまたはバックエンドのアプリケーションコードを更新し、GitHubにpushする。
         - `codes/frontend/app`配下に任意のファイルを作成するでも良い
-      - しばらく(10分程)待ち、以下の動作が実行されることを確認する
-        - GitHub Actionsが実行され、イメージがビルドされてECRにプッシュされることを確認する
-        - Argo CD ImageUpdater がイメージの更新を検知し、K8sマニフェストを更新することを確認する
-        - Argo CD がマニフェストの更新を検知し、Deployment が更新されることを確認する
-        - `kubectl logs -n argocd deployment/argocd-image-updater-controller --tail=30`コマンドを実行し`images_updated=1 errors=0`となること。
-          ログ出力例
-          ```
-          time="2026-03-03T23:28:08Z" level=info msg="Processing results: applications=1 images_considered=1 images_skipped=0 images_updated=1 errors=0" controller=imageupdater controllerGroup=argocd-image-updater.argoproj.io controllerKind=ImageUpdater imageUpdater_name=backend-image-updater imageUpdater_namespace=argocd logger=reconcile
-          ```
+
+      - GitHub Actions画面にて、「Issue：フロントエンドのコンテナをビルドしてECRにプッシュするワークフローを作成する」で作成したワークフローが実行されることを確認する。
+
+      - AWSコンソール画面にて、ECRに新しいイメージがpushされていることを確認する。
+
+      - ArgoCDのWEB画面にて、podのイベントログに「Successfully pulled image」のログが表示されること。
+
+      - EKSで動いているpodのイメージが変わること。
+
+      - GitHubのcommit履歴(以下URL)を確認し、argocdによるcommit `build: automatic update of frontend`があること。
+        https://github.com/<githubアカウント名>/cloudnative-practice/commits/main/
+
+      - `kubectl logs -n argocd deployment/argocd-image-updater-controller`コマンドを実行し`images_updated=1 errors=0`となること。
+        ログ出力例
+        ```
+        time="2026-03-03T23:28:08Z" level=info msg="Processing results: applications=1 images_considered=1 images_skipped=0 images_updated=1 errors=0" controller=imageupdater controllerGroup=argocd-image-updater.argoproj.io controllerKind=ImageUpdater imageUpdater_name=backend-image-updater imageUpdater_namespace=argocd logger=reconcile
+        ```
+
+      ※これにより、CICDパイプラインが正しく動いていることを一気通貫で確認できた。
 
       # 参考
       - Argo CD のデフォルトの同期間隔は最大3分です。[Automated Sync Policy](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/#automated-sync-semantics)
