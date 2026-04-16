@@ -139,11 +139,12 @@ issues:
 
   - title: Podにaffinityを設定する
     body: |
-      Podのaffinityを設定することで、Podの配置を制御し、可用性やパフォーマンスを向上させることができます。
+      # 本Issueでやること
+      Podのaffinityを設定することで、どのノードにPodを配置するかを制御し、可用性やパフォーマンスを向上させます。
       
       ## affinityの種類
       
-      - **nodeAffinity**: 特定のノードにPodを配置する
+      - **nodeAffinity**: Podを配置する先のノードを指定する
       - **podAffinity**: 特定のPodと同じノードにPodを配置する
       - **podAntiAffinity**: 特定のPodと異なるノードにPodを配置する
       
@@ -159,14 +160,35 @@ issues:
       - **リソース効率化**: 特定のハードウェアリソースを持つノードにPodを配置
       
       # プラクティス
-      - フロントエンドとバックエンドのDeploymentにaffinityを設定する
+      - フロントエンドとバックエンドのDeploymentにaffinityを設定する (既存の`deployment.yaml`を修正) ([Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/))
         - **フロントエンドのPod同士**: 異なるノードに分散配置（podAntiAffinity）
         - **バックエンドのPod同士**: 異なるノードに分散配置（podAntiAffinity）
         - **フロントエンドとバックエンド**: 同じノードに配置（podAffinity）
         - labelSelectorは各アプリケーションの`app`ラベルを使用する
 
+      # 確認
+      - 以下コマンドを実行し、想定通りのPod配置になっていることを確認する。
+      ```
+      kubectl get pods -o wide -l app=frontend
+      kubectl get pods -o wide -l app=backend
+      ```
+
+      想定結果
+      ```
+      tie304119@S2504C10442-T1:~/cloudnative-practice/cloudnative-practice/codes$ kubectl get pods -o wide -l app=backend
+      NAME                       READY   STATUS    RESTARTS   AGE    IP             NODE                  NOMINATED NODE   READINESS GATES
+      backend-7844588548-lf8hk   1/1     Running   0          50s    10.0.1.113     i-0cdd1deb45a62afa1   <none>           <none>
+      backend-7844588548-wkf8n   1/1     Running   0          2m1s   10.0.102.146   i-045338225f54996ad   <none>           <none>
+      tie304119@S2504C10442-T1:~/cloudnative-practice/cloudnative-practice/codes$ kubectl get pods -o wide -l app=frontend
+      NAME                        READY   STATUS    RESTARTS   AGE     IP             NODE                  NOMINATED NODE   READINESS GATES
+      frontend-5d97674795-84rdx   1/1     Running   0          8m56s   10.0.1.125     i-0cdd1deb45a62afa1   <none>           <none>
+      frontend-5d97674795-zfvmg   1/1     Running   0          9m55s   10.0.102.145   i-045338225f54996ad   <none>           <none>
+      tie304119@S2504C10442-T1:~/cloudnative-practice/cloudnative-practice/codes$ 
+      ```
+
   - title: PodDisruptionBudget（PDB）を設定する
     body: |
+      # 本Issueでやること
       PodDisruptionBudget（PDB）は、計画的なメンテナンス（ノードのアップグレードなど）中に同時に停止できるPodの数を制限することで、アプリケーションの可用性を保証します。
 
       ## PDBの重要性
@@ -176,7 +198,10 @@ issues:
       - クラスターのスケーリング
       - ノードの再起動
 
-      PDBを設定することで、これらのメンテナンス中でも最低限必要なPod数を維持し、サービスの継続性を保証できます。特に EKS AutoMode はノードを最大21日で強制的に入れ替えるためPDBの設定は非常に重要です。
+      PDBを設定することで、これらのメンテナンス中でも最低限必要なPod数を維持し、サービスの継続性を保証できます。
+      特に EKS Auto Mode では、ノードが最大21日で自動的に入れ替えられます。
+      この際、ノード上のPodは強制的に別ノードへ移動されます。
+      PDBが設定されていない場合、複数のPodが同時に停止してしまう可能性があるため、PDBの設定が非常に重要です。
 
       ## PDBの設定項目
 
@@ -190,25 +215,24 @@ issues:
       - **複数Pod構成**: `minAvailable: 50%` で半数以上のPodを維持
       - **高可用性要求**: より厳しい条件を設定
 
-      ## Update Strategyとの関係
-
-      PodDisruptionBudget（PDB）と、DeploymentのUpdate StrategyはどちらもPodの停止数を制御する設定ですが目的が異なります。PDBは計画的なメンテナンス時にPodの同時停止数を制限し、Update Strategyはアプリケーション更新時のPod置き換え方法を制御します。
-
-      Update StrategyとPDBは補完的に動作します：
-      - **Update Strategy**: アプリケーション更新時のPod置き換えを制御
-      - **PDB**: クラスターメンテナンス時のPod停止を制限
-
-      両方を設定することで、様々なシナリオでの可用性を保証できます：
-      - アプリケーション更新時: Update Strategyが適用
-      - ノードメンテナンス時: PDBが適用
-
       # プラクティス
-      - フロントエンドおよびバックエンドにPodDisruptionBudget（PDB）を設定する
+      - フロントエンドおよびバックエンドにPodDisruptionBudget（PDB）を設定する (`pdb.yaml`を新規作成) ([アプリケーションにDisruption Budget指定する](https://kubernetes.io/ja/docs/tasks/run-application/configure-pdb/))
         - 最低1つのPodを常に稼働状態にする
+
+      # 確認
+      - `kubectl get pdb`コマンドを実行し、`MIN AVAILABLE`が`1`であることを確認する。
+      ```
+      tie304119@S2504C10442-T1:~/cloudnative-practice/cloudnative-practice/codes/frontend/k8s$ kubectl get pdb
+      NAME           MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+      backend-pdb    1               N/A               1                     57s
+      frontend-pdb   1               N/A               1                     62s
+      tie304119@S2504C10442-T1:~/cloudnative-practice/cloudnative-practice/codes/frontend/k8s$ 
+      ```
 
   - title: DeploymentのUpdate Strategyを設定する
     body: |
-      DeploymentのUpdate Strategyは、Podを更新する際の方法を制御します。適切なupdate strategyを設定することで、ダウンタイムを最小限に抑えながら安全にアプリケーションを更新できます。
+      # 本Issueでやること
+      DeploymentのUpdate Strategyは、Podを更新する際の方法を制御します。適切なUpdate Strategyを設定することで、ダウンタイムを最小限に抑えながら安全にアプリケーションを更新できます。
 
       ## Update Strategyの種類
 
@@ -222,9 +246,14 @@ issues:
 
       ## 設定の考え方
 
-      - **ゼロダウンタイム更新**: `maxUnavailable: 0, maxSurge: 1` で常に最低限のPodを維持
-      - **高速更新**: `maxUnavailable: 50%, maxSurge: 50%` で並列度を上げる
-      - **リソース節約**: `maxSurge: 0, maxUnavailable: 1` で追加リソースを使わない
+      - **ゼロダウンタイム更新**: `maxUnavailable: 0, maxSurge: 1` の場合
+        - 新Podを1つ追加⇒古いPodを1つ削除⇒新Podを1つ追加⇒…　これを繰り返す
+
+      - **高速更新**: `maxUnavailable: 50%, maxSurge: 50%` の場合
+        - (Pod4つの場合) 新Podを2つ追加＆古いPodを2つ削除⇒新Podを2つ追加＆古いPodを2つ削除
+
+      - **リソース節約**: `maxSurge: 0, maxUnavailable: 1` の場合
+        - 古いPodを1つ削除⇒新Podを1つ追加⇒古いPodを1つ削除⇒新Podを1つ追加⇒…　これを繰り返す
 
       ## 実践的な例
 
@@ -252,5 +281,13 @@ issues:
       - ノードメンテナンス時: PDBが適用
 
       # プラクティス
-      - フロントエンドおよびバックエンドのDeploymentにRollingUpdate strategyを設定する
+      - フロントエンドおよびバックエンドのDeploymentにRollingUpdate Strategyを設定する (既存の`deployment.yaml`を修正) ([更新戦略](https://kubernetes.io/ja/docs/concepts/workloads/controllers/deployment/#%E6%9B%B4%E6%96%B0%E6%88%A6%E7%95%A5))
         - ゼロダウンタイムでの更新を実現するため`maxUnavailable: 0`、`maxSurge: 1`を設定する
+
+      # 確認
+      - `code/frontend/k8s/deployment.yaml`, `code/backend/k8s/deployment.yaml`を更新してapplyし、以下コマンドを実行する。
+        更新中にPod数が設定した値を下回らないことを確認する。
+      ```
+      kubectl get pods -l app=frontend -w
+      kubectl get pods -l app=backend -w
+      ```
