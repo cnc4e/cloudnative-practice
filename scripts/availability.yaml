@@ -268,7 +268,7 @@ issues:
 
       この設定により、更新中も常に最低限のPodが稼働し、ダウンタイムを回避できます。
 
-      ## PodDisruptionBudget（PDB）との関係
+      ## PodDisruptionBudget（PDB）とUpdate Strategyの関係
 
       PodDisruptionBudget（PDB）と、DeploymentのUpdate StrategyはどちらもPodの停止数を制御する設定ですが目的が異なります。PDBは計画的なメンテナンス時にPodの同時停止数を制限し、Update Strategyはアプリケーション更新時のPod置き換え方法を制御します。
 
