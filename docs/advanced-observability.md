@@ -42,13 +42,12 @@
 
 ### ログ
 
-  - ロググループの分割
-  - ログの構造化
-  - 構造化ログのメトリクス化
+  - Container Insights のロググループを分割する
+  - ログを構造化してメトリクス化する
 
 ### メトリクス
 
-  - Application Insights を使った可視化
+  - Application Signalsを使ってJavaアプリケーションのメトリクス収集する
 
 ---
 

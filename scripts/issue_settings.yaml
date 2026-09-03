@@ -48,7 +48,7 @@ settings:
       name: オブザーバビリティ（高度）
       color: 06cafe
       description: より高度な可観測性の設定
-    issue_yaml: o11y_advance.yaml
+    issue_yaml: o11y-advance.yaml
   - name: scale
     label:
       name: 拡張性
