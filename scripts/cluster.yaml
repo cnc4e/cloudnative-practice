@@ -1,6 +1,7 @@
 issues:
   - title: 用途によるノードプールの分割
     body: |
+      # 本Issueでやること
       本格的なKubernetesクラスターでは、異なるワークロードを1つのクラスターで運用することが一般的です。その際、ワークロードごとの影響を最小限に抑えるため、用途別にノードを分割することが推奨されます。これにより、リソースの効率的な利用とセキュリティの向上が図れます。
 
       # ノード分割の必要性
@@ -52,8 +53,17 @@ issues:
       - `system`にPodをスケジュールする
         - `amazon-cloudwatch-observability-controller-manager`や`snapshot-controller`などのPodを`system`で動かす
           - EKSアドオンでデプロイしたものはアドオンの設定を変更する
+
+      # 確認
+      - `aws eks describe-cluster --name <クラスタ名> --query "cluster.computeConfig.nodePools"`コマンドを実行し、`general-purpose`が表示され、`system`が表示されないこと
+      - `kubectl get nodeclass`コマンドを実行し、`system`ノードクラスが`Ready`となること
+      - `kubectl get nodepool`コマンドを実行し、`system`ノードプールが`Ready`となること
+      - `kubectl get node -L node-role`コマンドを実行し、`NODE-ROLE`が`system`のノードが作成されたこと
+      - `kubectl -n amazon-cloudwatch get pod -o wide`コマンドを実行し、対象のPodがカスタムノードプール`system`で動いていること
+
   - title: StorageClassによる動的ボリューム作成
     body: |
+      # 本Issueでやること
       Kubernetesでステートフルなアプリケーションを動かす際、データの永続化が必要になります。EKS AutoModeでは、StorageClassを使用してEBSボリュームを動的に作成し、アプリケーションに自動的にアタッチできます。これにより、事前にボリュームを作成する必要がなく、必要に応じて自動的にストレージが提供されます。
 
       # Dynamic Volume Provisioningの必要性
@@ -105,18 +115,25 @@ issues:
         - プロビジョナーは`ebs.csi.eks.amazonaws.com`を指定
         - gp3ボリュームタイプで暗号化を有効化
         - デフォルトStorageClassとして設定
+        - `volumeBindingMode`は`WaitForFirstConsumer`を指定
       - サンプルアプリケーションをデプロイする
         - `nginx`等のイメージを使ったDeploymentを作成
         - PersistentVolumeClaimでストレージを要求
         - Podでボリュームをマウントしてデータ永続化を確認
-      - 動作確認
-        - PVCが作成され、自動的にEBSボリュームが作成されることを確認
-        - Pod削除・再作成後もデータが永続化されていることを確認
-        - AWS ConsoleでEBSボリュームが暗号化されていることを確認
+
+      # 確認
+      - `kubectl get storageclass`コマンドを実行し、ストレージクラスが作成されたこと
+      - `kubectl get pvc`コマンドを実行し、PVCが`Bound`となること
+      - `kubectl get pv`コマンドを実行し、PVが作成されたこと
+      - Pod削除・再作成後もデータが永続化されていることを確認
+      - AWS ConsoleでEBSボリュームが暗号化されていることを確認
+
+      確認作業完了後、`kubectl delete -f <yamlファイル名>`コマンド等でPVCとPVを削除する。EBSもまとめて削除されることを確認する。
 
   - title: Ingressによる外部公開
     body: |
-      K8sのワークロードを外部公開する方法としてIngressがあります。Ingressは動作を制御する Ingress Controller を介し、LBなどの外部リソースと連携してトラフィックをルーティングします。EKS AutoModeではAWS Load Balancer Controllerのインストールが不要で、EKS AutoModeが自動的にALBを作成・設定します。
+        # 本Issueでやること
+        K8sのワークロードを外部公開する方法としてIngressがあります。Ingressは動作を制御する Ingress Controller を介し、LBなどの外部リソースと連携してトラフィックをルーティングします。EKS AutoModeではAWS Load Balancer Controllerのインストールが不要で、EKS AutoModeが自動的にALBを作成・設定します。
 
         # EKS AutoMode Ingressの概要
         - EKS AutoModeはルーティングタスクを自動化し、アプリサーバーをインターネットに公開
@@ -146,7 +163,10 @@ issues:
         - Frontendリソースの作成
           - ServiceリソースのタイプをClusterIPに変更
           - Ingressリソースを定義してFrontendを外部公開
-        - 動作確認
-          - 上記リソースを全て作成後、Ingressリソースを確認しLBのDNS名を取得
-          - DNS名でWebブラウザからアクセス可能か確認
-            - Ingressが作成されてからALBが利用可能になるまで数分かかる場合がある
+            - `spec.ingressClassName`に上記IngressClassの名前を指定
+            - `spec.rules`でパスとFrontendのService/ポートを関連付け
+
+        # 確認
+        - 上記リソースを全て作成後、Ingressリソースを確認しLBのDNS名を取得
+        - DNS名でWebブラウザからアクセス可能か確認
+          - Ingressが作成されてからALBが利用可能になるまで数分かかる場合がある
