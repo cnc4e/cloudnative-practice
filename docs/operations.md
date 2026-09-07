@@ -32,10 +32,10 @@
 - スクリプト実行
 
   ``` sh
-  python create_issues.py security
+  python create_issues.py operations
   ```
 
-自身のGitHubアカウントの`cloudnative-practice`リポジトリを開き、`Issues`タブに`セキュリティ`のラベルがついたissueが作成されていることを確認してください。
+自身のGitHubアカウントの`cloudnative-practice`リポジトリを開き、`Issues`タブに`運用・保守`のラベルがついたissueが作成されていることを確認してください。
 
 ## issue対応
 
