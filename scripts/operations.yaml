@@ -1,6 +1,7 @@
 issues:
   - title: Checkovによるポリシーチェック
     body: |
+      # 本Issueでやること
       プロジェクト独自のルールや規約（命名規則、タグ付けルール、リージョン制約など）を自動的に検査し、遵守を確保することは重要です。ポリシーチェックツールを使用することで、これらのプロジェクト固有のルールとセキュリティベストプラクティスの両方を自動検査し、コードの品質とセキュリティを向上させることができます。
 
       # ポリシーチェックの必要性
@@ -27,29 +28,51 @@ issues:
       - [Quick Start - checkov](https://www.checkov.io/1.Welcome/Quick%20Start.html)
 
       ## 主要なチェック項目
-      
-      - [kubernetes resource scans - checkov](https://www.checkov.io/5.Policy%20Index/kubernetes.html)
-      - [terraform resource scans - checkov](https://www.checkov.io/5.Policy%20Index/terraform.html)      
+
+      checkovでは標準機能で以下のベストプラクティスを満たしているかコードのスキャンを行います。
+      - Kubernetesマニフェスト（YAML）に対するチェック: [kubernetes resource scans - checkov](https://www.checkov.io/5.Policy%20Index/kubernetes.html)
+      - Terraformコード（.tf）に対するチェック: [terraform resource scans - checkov](https://www.checkov.io/5.Policy%20Index/terraform.html)
 
       ## カスタムポリシーの作成
-      
+
+      主要なチェック項目とは別に独自のルールを作成したい場合、カスタムポリシーの作成を行います。
       [Custom Policies Overview - checkov](https://www.checkov.io/3.Custom%20Policies/Custom%20Policies%20Overview.html)
 
       # プラクティス
-      
-      ## 基本的なCheckovスキャン
+
+      ## 導入
       - checkovをローカル端末にインストール
+      - `checkov --version`コマンドを実行し、バージョンが表示されること
+
+      ## 基本的なCheckovスキャン
       - カスタムポリシーを定義し、プロジェクトのルールを自動検査
       - 今回はあえてチェックに`失敗`するようなポリシーを定義（作成したポリシーを別のissueで使います。）
         - codes/checkovディレクトリを作成
         - ディレクトリ内にカスタムポリシーのYAMLを作成
           - ポリシーのIDは`CUSTOM_AWS_PROVIDER_CHECK`にする
+          - `policy_type`は`terraform`にする（指定しないと次のIssueでスキャンが実行されないため）
           - TerraformのAWSプロバイダーにdefault_regionが`us-west-1`である事を確認
       - 作成したポリシーを使いcheckovを実行しカスタムポリシーの確認結果が`FAILED`になることを確認
         - 対象は`codes/actions/terraform`ディレクトリなど任意
-        - `--check "CUSTOM_*"`を付けるとカスタムポリシーのみチェックできる
+        - `--check "CUSTOM_*"`を付けるとカスタムポリシーのみチェックできる（付けないと大量の`FAILED`が出てしまう）
+
+      実行例
+      ```sh
+      $ checkov -d . --external-checks-dir /path/to/codes/checkov --check CUSTOM_AWS_PROVIDER_CHECK
+      [ terraform framework ]: 100%|████████████████████|[3/3], Current File Scanned=iam_role.tf
+      [ secrets framework ]: 100%|████████████████████|[3/3], Current File Scanned=./_versions.tf
+
+      terraform scan results:
+
+      Passed checks: 0, Failed checks: 1, Skipped checks: 0
+
+      Check: CUSTOM_AWS_PROVIDER_CHECK: "Ensure AWS provider region is us-west-1"
+              FAILED for resource: aws.default
+              File: /_versions.tf:1-1
+      ```
   - title: CheckovによるポリシーチェックをCIに組み込む
     body: |
+      # 本Issueでやること
       CI/CDパイプラインにポリシーチェックを統合することで、開発者が変更をプッシュする度に自動的にセキュリティとコンプライアンスの検証を行い、問題のあるコードが本番環境にデプロイされることを防げます。
 
       # CI統合の必要性
@@ -100,6 +123,7 @@ issues:
 
   - title: AtlantisによるPRベースのterraform plan/apply
     body: |
+      # 本Issueでやること
       Pull Requestベースでのインフラ管理により、レビュープロセスを通じてインフラストラクチャの変更を制御し、変更内容の可視化とガバナンスを強化できます。Atlantisを使用することで、GitOpsワークフローを実現し、Pull Request上で直接terraform planの結果を確認し、レビュー後にterraform applyを実行できます。
 
       # PRベースインフラ管理の必要性
@@ -135,11 +159,50 @@ issues:
       - IngressClassを作成してある (issue: クラスタ Ingressによる外部公開)
 
       ## Atlantisサーバーの構築
-      - 公式のドキュメントを参考にAtlantisをKubernetesにデプロイ
-        - [Installation Guide | Atlantis](https://www.runatlantis.io/docs/installation-guide.html)
-        - 認証情報はARCで作ったPATを使用。**認証情報はGitに含めない**ように注意
-        - AtlantisのAWSクレデンシャルはPod IdentityでIAMロールを付与
-          - AtlantisのIAMロールからtfbackendへアクセスする。S3のリソースベースポリシーでIAMロールの制限をしている場合、Atlantis用のIAMロールを追加する
+      公式のドキュメントを参考にAtlantisをKubernetesにデプロイする。
+      - [Installation Guide | Atlantis](https://www.runatlantis.io/docs/installation-guide.html)
+      - 認証情報はARCで作ったPATを使用。**認証情報はGitに含めない**ように注意
+      - AtlantisのAWSクレデンシャルはPod IdentityでIAMロールを付与
+        - AtlantisのIAMロールからtfbackendへアクセスする。S3のリソースベースポリシーでIAMロールの制限をしている場合、Atlantis用のIAMロールを追加する
+
+      1. runatlantisのヘルムチャートリポジトリをhelmに追加
+         ```
+         helm repo add runatlantis https://runatlantis.github.io/helm-charts
+         ```
+      2. `helm inspect values runatlantis/atlantis > values.yaml`コマンドを実行し、values.yamlファイルを生成し、以下を修正する
+         - `fullnameOverride`は`atlantis`
+         - `orgAllowlist`は`github.com/cnc4e/*`
+         - `type`は`ClusterIP`
+         - `ingressClassName`は`alb`
+         - `ingress`の`path`は`/events`
+         - ストレージクラス設定は以下の通りであることを確認する（デフォルトのストレージクラス設定を利用する）
+           ```yaml
+           volumeClaim:
+             enabled: true
+             dataStorage: 5Gi
+             storageClassName: ""
+           ```
+      3. Webhook Secretを作成する
+         - `kubectl -n atlantis create secret generic atlantis-webhook-secret --from-literal=secret=<任意の文字列>`コマンドを実行し、Secretを作成する
+         - GitHubリポジトリ > Settings > Webhooks > Add webhookでWebhookを設定する
+           - Payload URLは`https://<Ingress(ALB)のDNS名>/events`
+           - Content typeは`application/json`
+           - Secretは`create secret generic`コマンドで入力した`<任意の文字列>`
+           - SSL verificationは`Disable (not recommended)`
+           - "Which events would you like to trigger this webhook?"は`Let me select individual events.`を選択し、`Pull requests`・`Pull request reviews`・`Pushes`・`Issue comments`にチェック
+           - `Active`にチェック
+      4. 以下のコマンドを実行しインストールする
+         ```sh
+         export USER=<User Name>
+         export GITHUB_TOKEN=<GitHub Personal Access Token>
+         export WEBHOOKSECRET=<Webhook Secret>
+
+         helm install atlantis runatlantis/atlantis -f values.yaml \
+           --set github.user=${USER} \
+           --set github.token=${GITHUB_TOKEN} \
+           --set github.secret=${WEBHOOKSECRET}
+         ```
+         - `helm install`のコマンド全文を`codes/atlantis/k8s`ディレクトリ配下の`README.md`に書いて保存すること
 
       ## 動作確認
       - Terraformのコードを修正したコミットをプッシュし、PRを作成する
@@ -147,6 +210,7 @@ issues:
 
   - title: GitHub Actionsによる定期的なドリフトチェック
     body: |
+      # 本Issueでやること
       Terraformで管理されているインフラストラクチャは、手動変更やAWS側の自動的な変更により、実際のリソース状態とTerraformの状態ファイルに差異（ドリフト）が発生することがあります。定期的なドリフトチェックにより、これらの差異を早期発見し、インフラの整合性を維持できます。
 
       # ドリフトチェックの必要性
@@ -174,6 +238,7 @@ issues:
         - 終了コード0: 差分なし
         - 終了コード2: 差分あり（ドリフト検出）
         - その他: エラー発生
+        - GitHub Actionsで`hashicorp/setup-terraform`アクションを使う場合、デフォルトではラッパースクリプト経由でterraformコマンドが実行されるため、実際の終了コードに関わらず0が返ってしまう。`terraform_wrapper: false`を指定し、`-detailed-exitcode`の終了コードがそのまま取得できるようにする
       - 検出された差分内容をSlackやメールで通知
       - 重要度に応じて自動Issue作成や担当者への直接通知
 
@@ -185,6 +250,7 @@ issues:
         - cronスケジュールでワークフローを定期実行
           - 動作確認時は作業ブランチのpushをトリガーにしてもいい
         - 任意のTerraformディレクトリでドリフトチェックを実行
+        - `hashicorp/setup-terraform`アクションを使う場合は`terraform_wrapper: false`を指定する（指定しないと`terraform plan -detailed-exitcode`が常に終了コード0を返し、ドリフトがあっても処理が失敗しない）
         - ドリフト検出時は処理を失敗させる
       - arc-runnerのIAMにtfbackendへのアクセス権とAWSへのReadOnlyAccess権を付与
       - tfbackendのリソースポリシーでarc-runnerのIAMロールを許可する
@@ -193,12 +259,19 @@ issues:
       このプラクティスは余裕がなければやらなくてもいいです。
 
       - ドリフト検知時はAWS SNS等を使い通知する
+        - SNSへの発行権限（`sns:Publish`）をarc-runnerのIAMロールに付与する
+        - 動作確認は、AWSコンソールでS3バケットのバージョニングを一時的に停止するなどしてドリフトを発生させ、SNS通知が飛ぶことを確認する
       - ドリフト検知をすべてのTerraformディレクトリに対して行うようにする
   - title: ブランチ戦略
     body: |
+      # 本Issueでやること
       **本issueは内容を確認するだけでクローズしてください。**
 
       効果的なブランチ戦略により、チーム開発における機能開発、バグ修正、リリース管理を体系化し、コードの品質とリリースの安定性を向上させることができます。適切なブランチ戦略は、並行開発の効率化と競合の最小化を実現します。
+
+      ## ブランチ戦略とは
+
+      Gitなどのバージョン管理で、「どんな目的のブランチを、いつ・どこから切って、どうマージするか」を決めた運用ルールのことです。
 
       ## ブランチ戦略の必要性
 
@@ -209,22 +282,43 @@ issues:
 
       ## 主要なブランチ戦略
 
-      参考: [Introduction to GitLab Flow | GitLab](https://docs.gitlab.co.jp/ee/topics/gitlab_flow.html)
+      参考:
+      - [Introduction to GitLab Flow | GitLab](https://docs.gitlab.co.jp/ee/topics/gitlab_flow.html)
+      - [git-flow, github-flow, gitlab-flowについて - Qiita](https://qiita.com/ucan-lab/items/371cdbaa2490817a6e2a)
 
       ### GitHub Flow
       - **特徴** - シンプルな構造、軽量、継続デプロイに適している
       - **適用場面** - 小規模チーム、頻繁なデプロイ、Web アプリケーション
-      - **ブランチ構成** - mainブランチ + 機能別ブランチ
+      - **ブランチ構成**
+      ```
+      main             # 常にデプロイ可能な状態を保つメインブランチ
+      ├─ feature/xxx   # 機能追加ブランチ。mainから切り、mainにマージする
+      ├─ feature/yyy
+      └─ fix/zzz       # 修正ブランチ。mainから切り、mainにマージする
+      ```
 
       ### Git Flow
-      - **特徴** - 複雑だが体系的、リリース管理が厳格
+      - **特徴** - 複雑だが体系的、リリース管理が厳格。役割の異なる複数のブランチを組み合わせて運用する
       - **適用場面** - 大規模プロジェクト、定期的なリリースサイクル
-      - **ブランチ構成** - main, develop, feature, release, hotfix
+      - **ブランチ構成**
+      ```
+      main      : 本番リリース済みのコードを管理するブランチ
+      develop   : 次期リリースへの開発を統合するブランチ（mainから分岐）
+      feature/* : 機能開発ブランチ（developから切り、developにマージ）
+      release/* : リリース準備ブランチ（developから切り、リリース後mainとdevelopにマージ）
+      hotfix/*  : 本番緊急対応ブランチ（mainから切り、mainとdevelopにマージ）
+      ```
 
       ### GitLab Flow
-      - **特徴** - GitHub FlowとGit Flowの中間的な位置
+      - **特徴** - GitHub FlowとGit Flowの中間的な位置。環境ごとのブランチを用いて段階的にリリースする
       - **適用場面** - 環境ごとのブランチ管理が必要な場合
-      - **ブランチ構成** - 環境ブランチ（production, staging）を追加
+      - **ブランチ構成**
+      ```
+      main               # 開発のベースとなるブランチ
+      ├─ staging         # ステージング環境にデプロイされるブランチ
+      │  └─ feature/*    # 機能開発ブランチ
+      └─ production      # 本番環境にデプロイされるブランチ
+      ```
 
       ## このプロジェクトでのブランチ戦略
 
@@ -245,60 +339,89 @@ issues:
       5. **レビュー・マージ** - コードレビュー後にmainブランチへマージ
   - title: リポジトリ設定
     body: |
+      # 本Issueでやること
       プロジェクトの品質とセキュリティを維持するため、GitHubリポジトリの適切な設定により、コードの保護、レビュープロセスの強制、自動化されたチェックの実行を確保することが重要です。
 
       # リポジトリ設定の必要性
-      - mainブランチへの直接プッシュにより、テストやレビューを経ずに問題のあるコードが反映されるリスク
-      - プルリクエストでの必須チェック（テスト、セキュリティスキャン、ポリシーチェック）の未実施
-      - 管理者権限の不適切な付与により、保護設定が回避される可能性
-      - コードレビューの省略による品質低下とセキュリティ脆弱性の見逃し
-      
+      現状のリポジトリ設定には、以下のような課題があります。
+
+      ### 課題①：mainブランチに直接pushできてしまう
+      - 問題点: テストやレビューを通さずにコードが反映されてしまう
+      - 起きること: 不具合や設定ミスがそのまま本番コードに入るリスクがある
+      - 対応の方向性: mainブランチへの直接pushを禁止し、必ずPR経由にする
+
+      ### 課題②：プルリクエスト時のチェックが必須になっていない
+      - 問題点: テストやセキュリティチェックを実行せずにマージできてしまう
+      - 起きること: 品質やセキュリティが担保されないまま変更が取り込まれる
+      - 対応の方向性: PRマージ前にテスト/セキュリティスキャン/ポリシーチェックを必須にする
+
+      ### 課題③：管理者権限の付与が適切に制御されていない
+      - 問題点: 管理者権限を付与すべきでない人物にも権限が付与されている
+      - 起きること: 保護設定を回避されてしまい、意図しない変更やルール無視の運用が発生する
+      - 対応の方向性: 管理者権限は最小限の担当者のみに付与する
+
+      ### 課題④：コードレビューが省略されてしまう
+      - 問題点: レビューをせずに変更を取り込めてしまう
+      - 起きること: 品質低下やセキュリティ問題を見逃す可能性が高まる
+      - 対応の方向性: PRに最低1人以上の承認レビューを必須にする
+
       # 解決策
-      - **保護されたブランチ (Branch Protection Rules)**: 従来の機能、ブランチ単位での保護設定、設定が簡単で広く使用されている
-      - **ルールセット (Repository Rulesets)**: 新しい機能、より柔軟で統合的なリポジトリルール管理、複数ブランチやタグに対する統一ルール適用が可能（本プラクティス採用）
-      
-      本プラクティスでは新しいルールセット機能を使用し、より柔軟で包括的なリポジトリの保護設定を行います。
+
+      - **保護されたブランチ（Branch Protection Rules）**
+        従来から提供されているブランチ保護機能。
+        ブランチ単位での設定が可能で、設定が比較的簡単なため広く利用されている。
+
+      - **ルールセット（Repository Rulesets）**
+        新しく提供されたリポジトリ保護機能。
+        複数のブランチやタグに対して、より柔軟かつ統一的にルールを適用できる。
+
+      本プラクティスでは、より柔軟で包括的な管理が可能な「ルールセット（Repository Rulesets）」を採用し、リポジトリ全体の保護を強化する。
 
       # ルールセットによるリポジトリ保護
-      
+
       [ルールセット](https://docs.github.com/ja/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets)は、従来の保護されたブランチ機能を拡張し、より柔軟で包括的なリポジトリルール管理を提供します。
-      
+
       ## ルールセットの主要機能
 
-      - [Available rules for rulesets](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets)。以下一部抜粋
-        - **Require a pull request before merging**: プルリクエストでの必須レビューと承認者数の設定
-        - **Require status checks to pass before merging**: CI/CDチェックの成功を必須条件に設定
-        - **Block force pushes**: 強制プッシュの禁止
-        - **Restrict deletions**: ブランチ削除の制限
+      - **Require a pull request before merging**: マージ前にプルリクエストを必須とし、レビューの実施や承認者数を設定できる
+      - **Require status checks to pass before merging**: CI/CDが成功しない限り、マージを許可しない
+      - **Block force pushes**: 履歴を書き換える強制プッシュ(force push)を禁止する
+      - **Restrict deletions**: ブランチの削除を制限する
 
       # プラクティス
-      
-      ルールセットを設定してリポジトリを保護します。
-      ルールセットを作成する際は ArgoCD ImageUpdate の認証方法に応じて設定を行います。
 
-      - PAT & GitHub Apps 認証の場合
-        - リポジトリの削除を防ぐルールを設定
-          - ルールセット名: `main-branch-delete-protection`
-          - Enforcement status: `Active`に設定
-          - Bypass list: `Repository admin`を指定
-          - 対象ブランチ: `main`ブランチを指定
-          - 以下のルールを有効化
-            - "Restrict deletions"
-      - GitHub Apps認証の場合のみ（バイパスを設定しないとArgoCD ImageUpdaterによる自動更新ができなくなるため）
-        - リポジトリの削除・mainブランチへの直接プッシュを防ぐルールを設定
-          - ルールセット名: `main-branch-push-protection`
-          - Enforcement status: `Active`に設定
-          - Bypass list: ArgoCDで使用したGitHub Appsを指定
-          - 対象ブランチ: `main`ブランチを指定
-          - 以下のルールを有効化
-            - "Restrict deletions"
-            - "Block force pushes"
-            - "Require a pull request before merging"
-              - Required approvals: 1
-              - "Dismiss stale pull request reviews when new commits are pushed"を有効化
+      ※GitHub無料プランのprivateリポジトリを利用している場合はルールセットの適用ができません。本プラクティスは確認のみ実施し、クローズしてください。
+
+      ルールセットを設定してGitHubリポジトリを保護します。
+      本プラクティスでは、人間の操作とArgoCD ImageUpdaterの操作を制御するルールを設定します。
+
+      GitHubのWEB画面 > Settings > Branches > Add branch ruleset より、以下のルールセット追加を行います。
+
+      ### 人間の操作/ArgoCD ImageUpdaterの操作の両方を制御するルールを設定する
+      - リポジトリの削除を防ぐルールを設定
+        - ルールセット名: `main-branch-delete-protection`
+        - Enforcement status: `Active`に設定
+        - Bypass list: `Repository admin`を指定
+        - 対象ブランチ: `main`ブランチを指定
+        - 以下のルールを有効化
+          - "Restrict deletions"
+
+      ### ArgoCD ImageUpdaterの操作を制御するルールを設定する
+      - リポジトリの削除・mainブランチへの直接プッシュを防ぐルールを設定
+        - ルールセット名: `main-branch-push-protection`
+        - Enforcement status: `Active`に設定
+        - Bypass list: ArgoCDで使用したGitHub Appsを指定 ※Bypassを設定しない場合、ArgoCD ImageUpdaterによる自動更新が停止するため注意
+        - 対象ブランチ: `main`ブランチを指定
+        - 以下のルールを有効化
+          - "Restrict deletions"
+          - "Block force pushes"
+          - "Require a pull request before merging"
+            - Required approvals: 1
+            - "Dismiss stale pull request reviews when new commits are pushed"
 
   - title: Terraform構成管理
     body: |
+      # 本Issueでやること
       **本issueは内容を確認するだけでクローズしてください。**
 
       Terraformプロジェクトが成長するにつれて、リソース定義の増加や複雑な依存関係により、コードの管理が困難になります。適切な構成管理により、保守性、再利用性、可読性を向上させ、チーム開発での効率的なインフラストラクチャ管理を実現できます。
@@ -382,21 +505,56 @@ issues:
 
   - title: K8sマニフェスト構成管理
     body: |
+      # 本Issueでやること
       **本issueは内容を確認するだけでクローズしてください。**
 
       Kubernetesアプリケーションが成長するにつれて、マニフェストファイルの数が増加し、管理が複雑になります。適切な構成管理により、保守性、可読性、再利用性を向上させ、チーム開発での効率的なKubernetesアプリケーション管理を実現できます。
 
       # K8sマニフェスト構成管理の必要性
-      - 単一ファイルでの大量リソース定義により、可読性と保守性が著しく低下
-      - 環境間（dev、staging、prod）でのマニフェスト差異の管理が複雑化
-      - アプリケーション別、機能別のリソースが混在し、影響範囲の把握が困難
-      - 同じような設定の重複によるメンテナンスコストの増大
+      現状のK8sマニフェスト構成管理には、以下のような課題があります。
+
+      ### 課題①：単一ファイルで大量リソースの定義をしている
+      - 問題点: Deployment、Service、ConfigMapなど多数のリソースを1つのマニフェストファイルにまとめて管理している
+      - 起きること: 設定内容の把握や修正が困難になり、変更ミスや影響範囲の見落としが発生しやすくなる
+      - 対応の方向性: リソース種別ごとにマニフェストファイルを分割し、可読性と保守性を向上させる
+
+      ### 課題②：環境間のマニフェスト差分管理が明確でない
+      - 問題点: 環境ごとの設定差分が明確に整理されておらず、手動調整やファイルコピーに依存している
+      - 起きること: 環境間の設定ズレや反映漏れが発生しやすく、検証環境と本番環境で挙動が異なるリスクが高まる
+      - 対応の方向性: 環境ごとの差分を整理した構成管理（ディレクトリ分割やKustomize等）を採用し、差分管理を明確化する
+
+      ### 課題③：アプリケーション単位・機能単位のリソースが混在している
+      - 問題点: アプリケーション単位の構成と機能単位の構成が混在しており、リソースの整理方針が統一されていない
+      - 起きること: 変更時にどのアプリケーションや機能へ影響するのか判断しづらく、意図しない影響を与える可能性がある
+      - 対応の方向性: アプリケーション単位・機能単位でディレクトリを分割し、変更影響範囲を明確にする
+
+      ### 課題④：類似の設定が重複している
+      - 問題点: 類似した設定が複数のマニフェストファイルに重複して記述されている
+      - 起きること: 修正時に複数ファイルを同時に更新する必要があり、修正漏れや運用負荷が増大する
+      - 対応の方向性: 共通設定を整理し、再利用可能な構成（共通ファイル化）にすることで、修正コストを削減する
 
       # 解決策
-      - **ディレクトリ分割**: アプリケーション・機能別にファイルを分離、シンプルで理解しやすい、小規模〜中規模に適している（本プロジェクト採用）
-      - **Kustomize**: ベースマニフェストから環境別の差分を管理、YAML重複を削減、Kubernetesネイティブツール
-      - **Helm**: テンプレート化による高度な抽象化、複雑な設定管理が可能、大規模プロジェクトに適している
-      - **ArgoCD ApplicationSets**: 複数環境への一括デプロイ、GitOpsパターンでの一元管理
+
+      ### 解決策①：ディレクトリ分割
+      - アプリケーション単位・機能単位でマニフェストを分離し、構成をシンプルに保つ
+      - 各リソースの責務が明確になり、可読性・保守性が向上する
+      - 小規模〜中規模のプロジェクトに適している
+      - 本プロジェクトの基本構造として採用
+
+      ### 解決策②：Kustomize
+      - ベースマニフェストに対して、環境差分（dev / prodなど）をパッチで管理
+      - YAMLの重複を削減しつつ、Kubernetesネイティブに構成を定義可能
+      - 本プロジェクトでは、frontend / backendなどのアプリケーションを本方式で管理
+
+      ### 解決策③：Helm
+      - テンプレート化されたマニフェスト（Helm Chart）を利用して構成を管理
+      - values.yamlによる設定上書きで柔軟にカスタマイズ可能
+      - 本プロジェクトでは、ArgoCDやAtlantisなどの外部コンポーネント導入に利用
+
+      ### 解決策④：Argo CD ApplicationSets
+      - 複数環境・複数アプリケーションへのデプロイ定義をまとめて管理
+      - Gitの状態をもとに自動的にApplicationを生成
+      - GitOpsに基づき「構成」と「デプロイ状態」を同期
 
       本プロジェクトでは初心者でもわかりやすいディレクトリ分割のアプローチを採用しています。
 
@@ -470,13 +628,31 @@ issues:
 
   - title: EKSクラスタのバージョンアップ
     body: |
+      # 本Issueでやること
       EKSクラスタは定期的に新しいKubernetesバージョンがリリースされ、セキュリティ修正や機能改善が提供されます。クラスタのバージョンを最新に保つことで、セキュリティの向上と新機能の活用が可能になります。
 
       # EKSバージョンアップの必要性
-      - 古いKubernetesバージョンのサポート終了によるセキュリティリスクの増大
-      - 新機能やAPIの利用不可による開発効率の低下
-      - AWSによるEKSコントロールプレーンの強制アップグレードを避けるための計画的な更新
-      - セキュリティパッチや重要な修正の適用により、クラスタの安定性向上
+      現状のEKSクラスタ運用には、以下のような課題があります。
+
+      ### 課題①：Kubernetesのサポート終了に伴うセキュリティリスクがある
+      - 問題点: サポートが終了したKubernetesバージョンでは、セキュリティ更新が提供されない
+      - 起きること: 既知の脆弱性が修正されず、クラスタ全体のセキュリティリスクが高まる
+      - 対応の方向性: サポート期間内のKubernetesバージョンへ計画的にアップグレードする
+
+      ### 課題②：最新機能やAPIを利用できず、開発効率が低下する
+      - 問題点: 古いKubernetesバージョンでは、新機能や推奨APIを利用できない
+      - 起きること: 開発・運用上の制約が増え、設計の自由度や開発効率が低下する
+      - 対応の方向性: Kubernetesバージョンを最新に保ち、新機能や推奨APIを継続的に活用できる状態とする
+
+      ### 課題③：AWSによるEKSコントロールプレーンの強制アップグレードリスクがある
+      - 問題点: サポート期限を超えると、AWSによりコントロールプレーンの強制アップグレードが実施される
+      - 起きること: 事前検証が不十分な状態でアップグレードが行われ、予期せぬ影響や障害が発生する可能性がある
+      - 対応の方向性: サポート期限前に計画的なバージョンアップを実施し、影響をコントロール可能な状態とする
+
+      ### 課題④：セキュリティパッチや重要な修正を取り込めていない
+      - 問題点: 古いバージョンのままでは、不具合修正や安定性向上の改善が反映されない
+      - 起きること: クラスタの安定性や信頼性が低下し、運用トラブルの原因となる
+      - 対応の方向性: 定期的にEKS/Kubernetesのバージョンアップを行い、最新の修正と改善を取り込む
 
       参考
       - [EKS の Kubernetes バージョンライフサイクルを理解する](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/kubernetes-versions.html)
@@ -593,26 +769,61 @@ issues:
 
   - title: Veleroを使ったバックアップとリストア
     body: |
+      # 本Issueでやること
       Kubernetesクラスタ上のアプリケーションとデータの定期的なバックアップは、災害復旧、誤操作からの回復、環境間でのデータ移行において重要です。DBなどK8s外部に保管したデータは外部サービスの機能でバックアップするのが一般的です。また、K8sリソースはマニフェストをapplyすれば再作成可能です。しかし、DVPでデプロイしたPVのボリュームやマニフェストにしていないK8sリソース（例えば、Argoのadminパスワードなど動的に作成されるリソース）は対策がいります。Veleroを使用することで、クラスタリソースとPersistent Volumeの統合的なバックアップとリストアを実現できます。
 
       # バックアップの必要性
-      - 人的ミスによるリソース削除や設定変更からの迅速な復旧
-      - ハードウェア障害やクラスタ障害時のデータ保護とサービス継続性の確保
-      - 開発・ステージング環境への本番データの安全な複製
-      - クラスタ移行やマルチクラスタ環境でのデータ同期
+      現状のバックアップ運用には、以下のような課題があります。
+
+      ### 課題①：人的ミスから迅速に復旧できない
+      - 問題点: 人的ミスによるリソース削除や設定変更が発生した際に、迅速に元の状態へ戻せない
+      - 起きること: 手作業での復旧が必要となり時間がかかる、もしくは完全に元に戻せないリスクがある
+      - 対応の方向性: Kubernetesリソースおよびデータをバックアップし、誤操作時にも迅速にリストアできる仕組みを導入する
+
+      ### 課題②：ハードウェア/クラスタ障害時のデータ保護と継続性が不十分
+      - 問題点: ハードウェア障害やクラスタ障害が発生した場合を想定した、データ保護および継続性が不十分
+      - 起きること: 障害発生時にデータが失われ、サービス停止が長期化することで、業務やユーザーへの影響が大きくなる
+      - 対応の方向性: クラスタ障害時にもデータを安全に復旧できるよう、Persistent Volumeを含めたバックアップと災害復旧手順を整備する
+
+      ### 課題③：本番データを安全に他環境へ複製できない
+      - 問題点: 本番環境のデータを開発・ステージング環境へ安全に複製するための標準的な仕組みが用意されていない
+      - 起きること: 検証やテストに本番相当のデータを使用できず、環境差異による不具合の見逃しや検証品質の低下につながる
+      - 対応の方向性: バックアップデータを活用し、本番データを安全に開発・ステージング環境へリストアできる運用を確立する
+
+      ### 課題④：クラスタ移行・マルチクラスタでのデータ同期が困難
+      - 問題点: クラスタ移行やマルチクラスタ構成を前提としたデータ同期・移行手段が明確に整理されていない
+      - 起きること: クラスタ移行時の作業負荷が高くなり、データ不整合や移行ミスが発生するリスクが高まる
+      - 対応の方向性: クラスタ間でリソースとデータを一貫して移行・同期できるバックアップ/リストア手段を導入する
 
       # 解決策
-      - **Velero**: Kubernetesネイティブなバックアップツール、リソースとボリュームの統合管理、災害復旧に特化（本プラクティス採用）
-      - **etcdスナップショット**: コントロールプレーンのバックアップ、Kubernetesクラスタ全体の状態保存、EKSでは利用で管理不可
-      - **アプリケーション固有ツール**: データベースダンプ等、アプリケーション特化の手法、細かい制御が可能
 
-      本プラクティスではKubernetes環境での包括的なバックアップとリストアが可能なVeleroを採用します。
+      ### Velero
+      Kubernetesネイティブなバックアップツールであり、KubernetesリソースとPersistent Volumeを統合的に管理できる。
+      災害復旧やクラスタ移行を主目的とした機能を備えており、本プラクティスではこれを採用する。
+
+      ### etcdスナップショット
+      Kubernetesコントロールプレーン（etcd）をバックアップし、クラスタ全体の状態を保存する方式。
+      ただし、EKSではユーザー側での取得・管理ができない。
+
+      ### アプリケーション固有ツール
+      データベースダンプなど、アプリケーションごとに特化したバックアップ手法。
+      細かな制御が可能な一方で、Kubernetes全体を横断した統合管理には向かない。
+
+      本プラクティスでは、Kubernetes環境におけるリソースとデータを包括的にバックアップ/リストアできる仕組みとして、Veleroを採用する。
 
       # Veleroによるバックアップとリストア
-      - **リソースバックアップ**: Kubernetesリソース（Deployment、Service、ConfigMap等）のYAML定義
-      - **ボリュームバックアップ**: Persistent VolumeのデータをCSIスナップショットまたはresticで保護
-      - **選択的バックアップ**: 名前空間、ラベル、リソース種別による柔軟なバックアップ対象選択
-      - **スケジュールバックアップ**: cron形式での定期的な自動バックアップ実行
+
+      ### リソースバックアップ
+      Deployment、Service、ConfigMapなどのKubernetesリソースをYAML定義としてバックアップする。
+
+      ### ボリュームバックアップ
+      Persistent Volumeのデータを、CSIスナップショットまたはResticを用いて保護する。
+
+      ### 選択的バックアップ
+      名前空間、ラベル、リソース種別を指定することで、必要な対象のみを柔軟にバックアップできる。
+
+      ### スケジュールバックアップ
+      cron形式による定期実行を設定し、バックアップを自動化する。
 
       ## Veleroの主要機能
       - **災害復旧**: クラスタ全体または特定の名前空間の完全復旧
@@ -629,19 +840,88 @@ issues:
 
       # プラクティス
 
-      - Veleroのクラスタにインストール
-        - 前提AWSリソース
-          - バックアップ用のS3バケット
-          - Veleroサーバー用 IAMロールおよび Pod Identity
-          - EKSアドオン（snapshot-controller）の有効化
-        - 前提K8sリソース
-          - VolumeSnapshotClassの作成
-        - Veleroサーバーのデプロイ [参考](https://velero.io/docs/v1.16/basic-install/)
-        - Velero CLIのインストール
-      - テスト用アプリケーションを使いVeleroのバックアップ/リストアを検証
-        - PVCを使いPVを持つアプリケーションをデプロイ
-          - 適当なデータをPVに保管
-        - Veleroを使ってバックアップを作成
-        - テスト用アプリケーションを削除
-        - Veleroを使ってリストアを実行
-          - リストア後、PVに保管したデータが復元されていることを確認
+      参考: [Velero実装例](https://github.com/cnc4e/cloudnative-practice/tree/main/example/velero)
+
+      ## 事前準備
+      - 以下ディレクトリを新規作成する
+        - `codes/velero/terraform`
+        - `codes/velero/k8s`
+      - 以下リソースをTerraformで新規作成する
+        - バックアップ用のS3バケット（バージョニング・暗号化・パブリックアクセスブロックを有効化）
+        - Veleroサーバー用IAMロールおよびPod Identity（S3操作、EBSスナップショット操作の権限を付与）
+        - EKSアドオン（snapshot-controller）の有効化
+      - VolumeSnapshotClassをKubernetesリソースとして作成する
+        ```yaml
+        apiVersion: snapshot.storage.k8s.io/v1
+        kind: VolumeSnapshotClass
+        metadata:
+          name: csi-aws-vsc
+          labels:
+            velero.io/csi-volumesnapshot-class: "true"
+        driver: ebs.csi.eks.amazonaws.com
+        deletionPolicy: Retain
+        ```
+        ```bash
+        kubectl apply -f volumesnapshotclass.yaml
+        kubectl get volumesnapshotclass
+        ```
+
+      ## Veleroのインストール
+      - Velero CLIをインストールする
+        ```bash
+        curl -L https://github.com/vmware-tanzu/velero/releases/download/<version>/velero-<version>-linux-amd64.tar.gz -o velero.tar.gz
+        tar -xvf velero.tar.gz
+        sudo mv velero-<version>-linux-amd64/velero /usr/local/bin/
+        rm -rf velero.tar.gz velero-<version>-linux-amd64/
+        velero version --client-only
+        ```
+      - Veleroサーバーをクラスタにデプロイする（[参考](https://velero.io/docs/v1.16/basic-install/)）
+      - 作成したAWSリソースが正しく設定されていることを確認する
+        ```bash
+        aws s3 ls | grep velero
+        aws iam get-role --role-name <velero-role-name> --query 'Role.Arn' --output text
+        aws eks list-pod-identity-associations --cluster-name <cluster-name> --namespace velero
+        aws eks describe-addon --cluster-name <cluster-name> --addon-name snapshot-controller --query 'addon.status' --output text
+        ```
+
+      ## テスト用アプリケーションを使ったバックアップ/リストアの検証
+      - PVCを使いPVを持つテスト用アプリケーションをデプロイし、適当なデータをPVに保管する
+      - Veleroが正常に稼働していることを確認する
+        ```bash
+        kubectl get ns velero
+        kubectl get pods -n velero
+        velero version
+        velero backup-location get
+        ```
+      - Veleroを使ってバックアップを作成する
+        ```bash
+        velero backup create <backup-name> --include-namespaces <namespace> --wait
+        ```
+      - バックアップ内容を検証する
+        ```bash
+        velero backup get
+        velero backup describe <backup-name> --details
+        velero backup logs <backup-name> | tail -n 100
+        kubectl get volumesnapshots -A
+        kubectl get volumesnapshotcontents
+        ```
+      - テスト用アプリケーションを削除する（名前空間を削除）
+        ```bash
+        kubectl delete namespace <namespace> --wait=true
+        ```
+      - Veleroを使ってリストアを実行する
+        ```bash
+        velero restore create <restore-name> --from-backup <backup-name> --wait
+        ```
+      - リストア結果を確認する
+        ```bash
+        velero restore get
+        velero restore describe <restore-name> --details
+        kubectl get all -n <namespace>
+        kubectl get pvc -n <namespace>
+        ```
+      - PVに保管したデータが復元されていることを確認する
+        ```bash
+        kubectl exec -n <namespace> deploy/<app-name> -- cat /data/test.txt
+        ```
+        リストア前に書き込んだ文字列が表示されれば復元成功
