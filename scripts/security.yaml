@@ -59,6 +59,7 @@ issues:
 
   - title: EKSアクセスエントリーによる認証・認可の管理
     body: |
+      # EKSアクセスエントリーによる認証・認可の管理
       EKSアクセスエントリー（Access Entry）は、EKSクラスタへのアクセス管理をAWS APIベースで行う仕組みです。従来のaws-auth ConfigMapに代わる新しいアクセス管理手法として、より安全で運用しやすい方法を提供します。
 
       [EKS アクセスエントリを使用して Kubernetes へのアクセスを IAM ユーザーに許可する](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/access-entries.html)
@@ -76,16 +77,6 @@ issues:
       - Terraformなどのインフラコードでライフサイクル管理がしやすい
       - ConfigMapの誤編集によるクラスタアクセス喪失のリスクを軽減できる
 
-      ## クラスタの認証モード
-
-      アクセスエントリーを使用するには、クラスタの認証モード（Authentication Mode）を切り替える必要があります。
-
-      - **CONFIG_MAP** - aws-auth ConfigMapのみで認証・認可を行う（レガシー方式）。アクセスエントリーは利用不可
-      - **API_AND_CONFIG_MAP** - aws-auth ConfigMapとアクセスエントリーを併用できる移行用のモード
-      - **API** - アクセスエントリーのみで認証・認可を行う。aws-auth ConfigMapは参照されない
-
-      認証モードの変更は`CONFIG_MAP → API_AND_CONFIG_MAP → API`の一方向のみで、逆方向（例: APIからConfigMapを含むモードへ戻す）には変更できません。移行する際は、既存のConfigMapの設定内容を先にアクセスエントリー側へ移した上で、次のモードへ切り替えてください。
-
       ## アクセスエントリーの種類
 
       ### 標準アクセスエントリー（STANDARD）
@@ -93,27 +84,12 @@ issues:
       - Kubernetesグループへの所属を定義し、既存のRBAC（RoleBinding/ClusterRoleBinding）で権限を制御できる
       - グループ指定に加えて、EKS管理ポリシーをアタッチしてEKS側で認可することも可能
 
-      ### ノード用アクセスエントリー
-      - `EC2_LINUX` / `EC2_WINDOWS` - セルフマネージドノードグループのIAMロール用
-      - `FARGATE_LINUX` - Fargateプロファイル用
-      - `HYBRID_LINUX` - ハイブリッドノード用
-      - マネージドノードグループやFargateプロファイルで使うIAMロールは、EKSが自動でアクセスエントリー（またはConfigMap）を作成・管理するため、手動作成は基本的に不要
-
       ### EKS管理ポリシー
       AWSが提供する定義済みポリシー：
       - `AmazonEKSClusterAdminPolicy` - クラスタ管理者権限
       - `AmazonEKSAdminPolicy` - 標準管理者権限
       - `AmazonEKSEditPolicy` - リソース編集権限
       - `AmazonEKSViewPolicy` - 読み取り専用権限
-
-      ## アクセスポリシーの適用範囲（アクセススコープ）
-
-      EKS管理ポリシーをアクセスエントリーに関連付ける際は、適用範囲（アクセススコープ）を指定します。
-
-      - **Cluster** - クラスタ内の全Namespaceに対してポリシーの権限を適用
-      - **Namespace** - 指定した1つ以上のNamespaceに限定してポリシーの権限を適用
-
-      同じアクセスエントリーに複数のポリシーを異なるスコープで関連付けることも可能です（例: 特定Namespaceのみ編集権限、他は読み取り専用など）。
 
       ## セキュリティのベストプラクティス
 
