@@ -80,9 +80,10 @@ issues:
       ## アクセスエントリーの種類
 
       ### 標準アクセスエントリー（STANDARD）
-      - IAMプリンシパル（ユーザー/ロール）を直接マッピング（typeを省略した場合のデフォルト）
-      - Kubernetesグループへの所属を定義し、既存のRBAC（RoleBinding/ClusterRoleBinding）で権限を制御できる
-      - グループ指定に加えて、EKS管理ポリシーをアタッチしてEKS側で認可することも可能
+      typeを省略した場合のデフォルトで、人やCI/CDなど「クラスタを利用する側」のIAMユーザー/ロール1つに対して作成するアクセスエントリーです。権限の付け方は次の2通りがあり、併用も可能です。
+
+      - **Kubernetesグループを指定する** - あらかじめ作成した`RoleBinding`/`ClusterRoleBinding`のsubjectにグループ名を紐付け、Kubernetes RBACで権限を制御する
+      - **EKS管理ポリシーをアタッチする** - `AmazonEKSViewPolicy`等のポリシーをエントリーに関連付け、EKS側で権限を制御する（RBACオブジェクトの作成は不要）
 
       ### EKS管理ポリシー
       AWSが提供する定義済みポリシー：
