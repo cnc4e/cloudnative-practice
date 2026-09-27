@@ -252,20 +252,35 @@ issues:
 
   - title: Kubernetes RBACによるアクセス制御
     body: |
-      Kubernetes RBAC（Role-Based Access Control）は、クラスタ内のK8sリソースへのアクセスを制御するセキュリティ機能です。ユーザーやサービスアカウントに対して、必要最小限の権限のみを付与することで、セキュリティリスクを最小化できます。
+      # Kubernetes RBACによるアクセス制御
+      Kubernetes RBAC（Role-Based Access Control）は、クラスタ内のKubernetesリソースへの操作を、ユーザーやServiceAccountの役割（Role）に基づいて制御するセキュリティ機能です。「誰が」「どのリソースに対して」「どの操作を」実行できるかを明示的に定義し、必要最小限の権限のみを付与することで、設定ミスや権限の濫用によるセキュリティリスクを最小化できます。
 
       [Using RBAC Authorization](https://kubernetes.io/docs/reference/access-authn-authz/rbac/)
+
+      ## RBACの概要
+
+      ### RBACがない場合の課題
+      - クラスタ内のユーザーやServiceAccountに対する権限の絞り込みが行われず、必要以上に強い権限を持ちやすい
+      - CI/CDや運用ツール用のServiceAccountがクラスタ管理者相当の権限を持ってしまうケースがある
+      - 誰がどのリソースを操作できるかが不透明になり、意図しない変更や事故の温床になる
+
+      ### RBACによる制御の利点
+      - ユーザー・ServiceAccountごとに必要最小限の権限を明示的に定義できる
+      - Namespace単位・クラスタ単位で権限のスコープを分離できる
+      - マニフェストとしてコード管理できるため、権限変更の履歴を追跡・レビューしやすい
 
       ## RBACの基本概念
 
       ### 主要なリソース
-      - **Role** - Namespace内のリソースに対する権限を定義
-      - **ClusterRole** - クラスタ全体のリソースに対する権限を定義
-      - **RoleBinding** - RoleをユーザーやServiceAccountに紐付け
-      - **ClusterRoleBinding** - ClusterRoleをユーザーやServiceAccountに紐付け
+      - **Role** - 特定のNamespace内のリソースに対する権限を定義
+      - **ClusterRole** - クラスタ全体（またはNamespaceに属さないリソースやNamespaceをまたぐリソース）に対する権限を定義
+      - **RoleBinding** - RoleをユーザーやServiceAccountに紐付け、同一Namespace内で権限を有効化する
+      - **ClusterRoleBinding** - ClusterRoleをユーザーやServiceAccountに紐付け、クラスタ全体で権限を有効化する
+
+      なお、ClusterRoleをRoleBindingと組み合わせることで、クラスタ全体で使い回せる権限定義を特定のNamespaceのみに限定して適用することも可能です。
 
       ### APIGroups とリソースの指定
-      
+
       RBACでは、対象となるKubernetesリソースをAPIGroupsとリソース名で指定します。主要なAPIGroupsは以下の通りです。
 
       - **""** (core group) - Pod、Service、ConfigMap、Secret など
@@ -282,33 +297,44 @@ issues:
 
       ### ロールで設定する権限(verbs)の種類
 
-      - **get** - リソースの取得
+      - **get** - 個別リソースの取得
       - **list** - リソースの一覧表示
       - **create** - リソースの作成
-      - **update/patch** - リソースの更新
+      - **update/patch** - リソースの更新（updateは全体の置き換え、patchは差分の適用）
       - **delete** - リソースの削除
-      - **watch** - リソースの変更監視
+      - **watch** - リソースの変更を監視（変更イベントをストリームで受信）
+
+      ### ServiceAccountとは
+      ServiceAccountとは、PodなどにKubernetes APIを操作するための身分（ID）を与える仕組みです。
+
+      - Pod内のプロセスがKubernetes APIにアクセスする際に使用する、Kubernetesが管理するアカウント
+      - IAMユーザーのような人間のユーザーとは異なり、Kubernetes自身が発行・管理する主体で、Pod起動時にトークンとしてマウントされる
+      - 何も指定しなければ、PodはそのNamespaceの`default` ServiceAccountを自動的に使用する
+      - RoleBinding/ClusterRoleBindingでServiceAccountに権限を紐付けることで、そのServiceAccountを使うPod（＝アプリケーション）が実行できるKubernetes API操作を制御できる
 
       ## セキュリティのベストプラクティス
 
       ### 最小権限の原則
-      - 必要な権限のみを付与
-      - ワイルドカード（`*`）の使用を避ける
+      - 必要なAPIGroups・リソース・verbsのみを明示的に付与する
+      - ワイルドカード（`*`）の使用を避け、権限の範囲を最小化する
+      - `cluster-admin`のような強力な既定ClusterRoleの利用は避け、用途に合わせた専用のRole/ClusterRoleを作成する
 
       ### ServiceAccountの管理
-      - 用途別のServiceAccount作成
-      - 不要なServiceAccountの削除
+      - Pod・CronJobなどワークロードの用途別にServiceAccountを作成し、権限を使い分ける
+      - default ServiceAccountへの権限付与は避け、必要に応じて`automountServiceAccountToken: false`でトークンの自動マウントも無効化する
+      - 不要になったServiceAccountおよびそれに紐づくRoleBinding/ClusterRoleBindingは削除する
 
       # プラクティス
 
       時間による計画的な性能拡張を想定したCronJobを作成する。
 
       - CronJobを作成する
-        - コードはcodes/frontend/k8sディレクトリに格納
+        - コードはcodes/backend/k8sディレクトリに格納
+        - 対象はbackend Deployment（frontendはHPAによるオートスケーリングが既に実装されており、CronJobでreplicasを直接patchしてもHPAに上書きされてしまうため対象外とする）
         - スケールアウト用のCronJob
           - 時間は任意（スケールイン用の少なくとも2分前にする）
           - イメージは`bitnami/kubectl:latest`を使う
-          - `kubectl patch deploy frontend -p '{"spec":{"replicas":3}}'`コマンドでフロントエンドのPod数を増やす
+          - `kubectl patch deploy backend -p '{"spec":{"replicas":2}}'`コマンドでバックエンドのPod数を増やす
           - 任意のServiceAccountを指定
         - スケールイン用のCronJob
           - 基本的にスケールアウト用と同じ。時間とスケール数を変える
@@ -316,6 +342,7 @@ issues:
           - ServiceAccount
           - Role
             - apps.deploymentsを"get", "list", "patch"する権限を持つ
+            - resourceNamesで対象をbackendのみに限定する（他のDeploymentをpatchできないようにする）
           - RoleBinding
 
   - title: ReadOnlyRootFilesystemによるセキュリティ強化
