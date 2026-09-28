@@ -438,6 +438,7 @@ issues:
 
   - title: 特権のはく奪（Capability Drop）によるセキュリティ強化
     body: |
+      # 特権のはく奪（Capability Drop）によるセキュリティ強化
       Linux Capabilitiesは、従来のroot権限を細分化し、プロセスに必要最小限の権限のみを付与する仕組みです。コンテナ実行時に不要な特権を削除（drop）することで、セキュリティリスクを大幅に軽減できます。
 
       [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
