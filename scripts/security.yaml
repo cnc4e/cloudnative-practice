@@ -438,6 +438,7 @@ issues:
 
   - title: 特権のはく奪（Capability Drop）によるセキュリティ強化
     body: |
+      # 特権のはく奪（Capability Drop）によるセキュリティ強化
       Linux Capabilitiesは、従来のroot権限を細分化し、プロセスに必要最小限の権限のみを付与する仕組みです。コンテナ実行時に不要な特権を削除（drop）することで、セキュリティリスクを大幅に軽減できます。
 
       [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
@@ -447,35 +448,37 @@ issues:
       ### 従来のroot権限の問題
       - root権限は「全てか無か」の権限モデル
       - 必要以上に強力な権限を付与してしまう
-      - セキュリティ侵害時の影響が甚大
+      - セキュリティ侵害時の影響が甚大（1つのプロセスが乗っ取られるとホスト全体に影響が及びうる）
       - 最小権限の原則に反する
 
       ### Capabilitiesによる権限の細分化
-      - root権限を個別の機能単位に分割
-      - プロセスに必要な権限のみを付与
+      - root権限を個別の機能単位（約40種類）に分割した仕組み
+      - プロセスに必要な権限のみを付与できる
       - 不要な権限は削除（drop）して攻撃面を縮小
       - より細かなセキュリティ制御が可能
 
       ## 主要なLinux Capabilities
 
+      なぜdropの対象を意識する必要があるか理解するため、代表的なCapabilityと悪用された場合のリスクを整理します。
+
       ### ネットワーク関連
-      - **CAP_NET_BIND_SERVICE** - 1024未満のポートでのバインド
-      - **CAP_NET_RAW** - RAWソケットの作成
-      - **CAP_NET_ADMIN** - ネットワーク設定の変更
+      - **CAP_NET_BIND_SERVICE** - 1024未満のポートでのバインド。Webサーバーなど特権ポートを使うアプリケーションで必要になることがある
+      - **CAP_NET_RAW** - RAWソケットの作成。攻撃者に付与されるとパケットの偽装（spoofing）やARPスプーフィングなどネットワーク詐称の踏み台にされうる
+      - **CAP_NET_ADMIN** - ネットワーク設定の変更。ルーティングテーブルやファイアウォール設定を書き換えられるため、通信の傍受や迂回に悪用されうる
 
       ### ファイルシステム関連
-      - **CAP_DAC_OVERRIDE** - ファイル権限の無視
-      - **CAP_FOWNER** - ファイル所有者権限の無視
-      - **CAP_CHOWN** - ファイル所有者の変更
+      - **CAP_DAC_OVERRIDE** - ファイル権限（DAC: Discretionary Access Control）の無視。本来読み書きできないファイルにもアクセスできてしまうため、機密ファイルの窃取に直結する
+      - **CAP_FOWNER** - ファイル所有者権限の無視。所有者チェックをすべて回避できるため、他プロセスが作成したファイルも自由に操作されうる
+      - **CAP_CHOWN** - ファイル所有者の変更。権限昇格の踏み台（自分が所有者になれば他の権限チェックも回避しやすくなる）として使われうる
 
       ### システム管理関連
-      - **CAP_SYS_ADMIN** - システム管理操作（非常に強力）
-      - **CAP_SYS_TIME** - システム時刻の変更
-      - **CAP_KILL** - 他プロセスへのシグナル送信
+      - **CAP_SYS_ADMIN** - システム管理操作（非常に強力）。mountやカーネル機能へのアクセスなど広範な操作が可能で、事実上root権限に近く、コンテナブレイクアウトに直結しやすいため特に注意が必要
+      - **CAP_SYS_TIME** - システム時刻の変更。ログのタイムスタンプ改ざんなど、侵害の痕跡を消す（証拠隠滅）目的で悪用されうる
+      - **CAP_KILL** - 他プロセスへのシグナル送信。本来は自プロセスのみに制限されるべき操作で、他プロセスを強制終了させるDoS攻撃に使われうる
 
       ## containerdのデフォルトCapabilities
 
-      EKS AutoMode では、containerd を使用してコンテナを実行します。containerd のデフォルトCapabilitiesは以下の通りです。
+      EKS AutoMode では、containerd を使用してコンテナを実行します。containerd はLinuxの互換性維持のため、多くの一般的なコンテナワークロードで問題が起きないよう、デフォルトで以下のCapabilitiesを付与しています。つまり明示的に設定しない限り、実際に必要かどうかに関わらずこれらの権限がコンテナに渡っている状態になります。
 
       - CAP_CHOWN
       - CAP_DAC_OVERRIDE
@@ -494,10 +497,12 @@ issues:
 
       [containerd/pkg/oci/spec.go · containerd/containerd](https://github.com/containerd/containerd/blob/1117f663e77d662b02cec530a03310ed91b1d18b/pkg/oci/spec.go#L118)
 
+      多くのアプリケーションはこれらの権限を実際には使わないため、デフォルトのままだと「使っていないのに攻撃者に使われうる」権限が残り続けることになります。
+
       ## 特権のはく奪戦略
 
       ### ALL権限の削除
-      最も安全なアプローチは、すべての特権を削除することです：
+      最も安全なアプローチは、すべての特権を削除することです。上記のようにアプリケーションが実際に必要とするCapabilitiesはごく一部であることが多いため、まず全てを削除してから必要な分だけ足す「default deny」の考え方が推奨されます：
       ```yaml
       securityContext:
         capabilities:
@@ -506,7 +511,7 @@ issues:
       ```
 
       ### 必要に応じた権限の追加
-      削除後、アプリケーションに必要な最小限の権限のみを追加：
+      削除後、アプリケーションに必要な最小限の権限のみを追加します。「何が必要か分からないので広めに許可する」ではなく、「動作確認をして初めて必要なものだけを足す」順序にすることで、不要な権限の付与を防げます：
       ```yaml
       securityContext:
         capabilities:
