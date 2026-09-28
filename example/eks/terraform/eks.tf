@@ -44,12 +44,47 @@ resource "aws_eks_cluster" "this" {
     aws_iam_role_policy_attachment.cluster_AmazonEKSBlockStoragePolicy,
     aws_iam_role_policy_attachment.cluster_AmazonEKSLoadBalancingPolicy,
     aws_iam_role_policy_attachment.cluster_AmazonEKSNetworkingPolicy,
+    aws_iam_role_policy.cluster_lb_tag_permissions,
   ]
 
 
   tags = {
     Name = local.name_prefix
   }
+}
+
+# AmazonEKSLoadBalancingPolicyにはec2:DeleteTags/elasticloadbalancing:RemoveTagsが
+# 含まれておらず、Service/Ingressのポート変更等で既存タグの入れ替えが必要になった際に
+# ヘルスチェックが失敗する（EKS Auto Modeの既知の権限不足）ため補完する
+resource "aws_iam_role_policy" "cluster_lb_tag_permissions" {
+  name = "eks-loadbalancing-tag-permissions"
+  role = aws_iam_role.cluster.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["ec2:DeleteTags"]
+        Resource = "arn:aws:ec2:*:*:security-group/*"
+        Condition = {
+          StringEquals = {
+            "aws:ResourceTag/eks:eks-cluster-name" = "$${aws:PrincipalTag/eks:eks-cluster-name}"
+          }
+        }
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["elasticloadbalancing:RemoveTags"]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:ResourceTag/eks:eks-cluster-name" = "$${aws:PrincipalTag/eks:eks-cluster-name}"
+          }
+        }
+      },
+    ]
+  })
 }
 
 # Terraform実行ユーザーのEKSアクセスエントリー
