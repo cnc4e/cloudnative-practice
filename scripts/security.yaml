@@ -659,8 +659,9 @@ issues:
       - ワーカーノード
         - EKS Automode のワーカーノードはデフォルトでSELinuxがEnforcingモードで有効 [EKS Auto Mode を使用してクラスターインフラストラクチャを自動化する - Amazon EKS](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/automode.html)
       - Pod
-        - ノードでSELinuxが有効な場合、コンテナランタイムによってPodごとに一意なセキュリティコンテキストが自動的に割り振られ、コンテナ内のファイルのみアクセスできるように制限される。複数のPod間でファイルを共有したい場合など、PodのSecurityContextでSELinuxオプションを明示的に指定してラベルを揃えることも可能 [Kubernetes API Reference Docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#securitycontext-v1-core)
+        - ノードでSELinuxが有効な場合、コンテナランタイムによってPodごとに一意なセキュリティコンテキストが自動的に割り振られ、コンテナ内のファイルのみアクセスできるように制限される。 [Kubernetes API Reference Docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#securitycontext-v1-core)
           - これにより、同一ノード上で複数のコンテナが稼働していても、あるコンテナが乗っ取られた場合に他のコンテナが利用しているファイルへはアクセスできないよう分離される
+          - 複数のPod間でファイルを共有したい場合など、PodのSecurityContextでSELinuxオプションを明示的に指定してラベルを揃えることも可能。
         - EKS Automode (Bottlerocket)ではすべての非特権Podに`container_t`タイプのラベルが自動的に付与されコンテナ実行ユーザーがrootでもアクションが制限される[Bottlerocket のセキュリティ機能 〜オープンソースの Linux ベースオペレーティングシステム〜 | Amazon Web Services ブログ](https://aws.amazon.com/jp/blogs/news/security-features-of-bottlerocket-an-open-source-linux-based-operating-system/)
           - コンテナ内でrootとして実行されるプロセスは、通常であればホスト側でも高い権限を持ち得ますが、SELinuxのラベルによって権限が`container_t`ドメインの範囲に閉じ込められるため、コンテナ内でroot権限が悪用されてもホスト全体への影響を防ぐことができる
 
