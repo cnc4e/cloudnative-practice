@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: frontend-scaleout
+  name: backend-scaleout
   namespace: default
 spec:
   schedule: "28 2 * * 1-5"
@@ -17,13 +17,13 @@ spec:
             command:
             - /bin/sh
             - -c
-            - kubectl patch deploy frontend -p '{"spec":{"replicas":3}}'
+            - kubectl patch deploy backend -p '{"spec":{"replicas":3}}'
           restartPolicy: OnFailure
 ---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: frontend-scalein
+  name: backend-scalein
   namespace: default
 spec:
   schedule: "30 2 * * 1-5"
@@ -38,6 +38,6 @@ spec:
             command:
             - /bin/sh
             - -c
-            - kubectl patch deploy frontend -p '{"spec":{"replicas":1}}'
+            - kubectl patch deploy backend -p '{"spec":{"replicas":1}}'
           restartPolicy: OnFailure
 ---
