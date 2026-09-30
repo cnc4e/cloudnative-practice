@@ -625,13 +625,18 @@ issues:
     body: |
       **本issueは内容を確認するだけでクローズしてください。**
 
-      SELinux（Security-Enhanced Linux）は、Linuxカーネルのセキュリティモジュールです。ユーザーやプロセスがアクセスできるファイルを制御できます。
+      # SELinuxによるアクセス制御の概要
+      SELinux（Security-Enhanced Linux）は、Linuxカーネルに組み込まれたセキュリティモジュールです。ユーザーやプロセスがアクセスできるファイルなどのリソースをポリシーベースで制限し、コンテナやホストが侵害された際の被害範囲を最小化します。
+
+      ## なぜSELinuxが必要か
+
+      Kubernetesのコンテナはホストとカーネルを共有しているため、コンテナ内で脆弱性が悪用されると、コンテナエスケープによりホスト上の他のリソースへアクセスされるリスクがあります。SELinuxを使うと、コンテナごとに一意なセキュリティコンテキスト（ラベル）を割り当てられるため、コンテナエスケープが発生した場合でも、そのコンテナに許可された範囲を超えたファイルへはアクセスできず、被害を限定できます。
 
       ## SELinuxの概要
 
-      従来のアクセス制御（DAC）ではファイルやディレクトリに設定したパーミッションに基づく制限でした。しかし、rootユーザーは全てのリソースにアクセスできるため、セキュリティ上のリスクが高いです。
+      従来のアクセス制御（DAC: Discretionary Access Control）は、ファイルやディレクトリに設定したパーミッションに基づく制限です。しかしDACでは、ファイルの所有者であるユーザー自身が裁量でアクセス権を変更できてしまい、かつrootユーザーはパーミッションに関わらず全てのリソースにアクセスできるため、rootユーザーが乗っ取られると際限なく被害が広がってしまうという弱点があります。
 
-      SELinuxは強制アクセス制御（MAC）を提供し、ポリシーで明示的に許可されたアクセスのみを許可することで、システム全体のセキュリティを強化します。プロセスやファイルにはセキュリティコンテキストが付与され、アクセスはそのポリシーに基づいて制御されます。rootユーザーもこのポリシーに従う必要があります。
+      SELinuxは強制アクセス制御（MAC: Mandatory Access Control）を提供し、ユーザーの裁量に関わらずポリシーで明示的に許可されたアクセスのみを許可することで、システム全体のセキュリティを強化します。プロセスやファイルにはそれぞれセキュリティコンテキストが付与され、あるプロセスが特定のファイルにアクセスできるかは、両者のコンテキストの組み合わせがポリシーで許可されているかどうかで判定されます。rootユーザーもこのポリシーに従う必要があるため、DACだけでは防げない権限昇格やコンテナエスケープ後の被害を抑えることができます。
 
       ## SELinuxの動作モード
 
@@ -654,9 +659,10 @@ issues:
       - ワーカーノード
         - EKS Automode のワーカーノードはデフォルトでSELinuxがEnforcingモードで有効 [EKS Auto Mode を使用してクラスターインフラストラクチャを自動化する - Amazon EKS](https://docs.aws.amazon.com/ja_jp/eks/latest/userguide/automode.html)
       - Pod
-        - ノードでSELinuxが有効な場合、PodのSecurityContextでSELinuxオプションを設定可能
-          - オプション指定しなくてもコンテナランタイムにより一意なコンテキストが割り振られ、コンテナ内のファイルのみアクセスできるように制限される [Kubernetes API Reference Docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#securitycontext-v1-core)
-          - EKS Automode (Bottleroket)ではすべての非特権Podに`container_t`タイプのラベルが自動的に付与されコンテナ実行ユーザーがrootでもアクションが制限される[Bottlerocket のセキュリティ機能 〜オープンソースの Linux ベースオペレーティングシステム〜 | Amazon Web Services ブログ](https://aws.amazon.com/jp/blogs/news/security-features-of-bottlerocket-an-open-source-linux-based-operating-system/)
+        - ノードでSELinuxが有効な場合、コンテナランタイムによってPodごとに一意なセキュリティコンテキストが自動的に割り振られ、コンテナ内のファイルのみアクセスできるように制限される。複数のPod間でファイルを共有したい場合など、PodのSecurityContextでSELinuxオプションを明示的に指定してラベルを揃えることも可能 [Kubernetes API Reference Docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#securitycontext-v1-core)
+          - これにより、同一ノード上で複数のコンテナが稼働していても、あるコンテナが乗っ取られた場合に他のコンテナが利用しているファイルへはアクセスできないよう分離される
+        - EKS Automode (Bottlerocket)ではすべての非特権Podに`container_t`タイプのラベルが自動的に付与されコンテナ実行ユーザーがrootでもアクションが制限される[Bottlerocket のセキュリティ機能 〜オープンソースの Linux ベースオペレーティングシステム〜 | Amazon Web Services ブログ](https://aws.amazon.com/jp/blogs/news/security-features-of-bottlerocket-an-open-source-linux-based-operating-system/)
+          - コンテナ内でrootとして実行されるプロセスは、通常であればホスト側でも高い権限を持ち得ますが、SELinuxのラベルによって権限が`container_t`ドメインの範囲に閉じ込められるため、コンテナ内でroot権限が悪用されてもホスト全体への影響を防ぐことができる
 
   - title: 信頼できるベースイメージの選定
     body: |
