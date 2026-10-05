@@ -449,17 +449,20 @@ issues:
 
   - title: allowPrivilegeEscalationによる特権昇格の防止
     body: |
-      allowPrivilegeEscalation設定は、コンテナ内プロセスが実行時に親プロセスより多くの特権を取得することを防ぐセキュリティ機能です。この設定により、setuidバイナリやsudoコマンドによる特権昇格攻撃を防止できます。
+      # allowPrivilegeEscalationによる特権昇格の防止
+      allowPrivilegeEscalation(権限昇格を許可する)設定は、コンテナ内のプロセスが実行時に、起動時点よりも多くの特権を取得することを防ぐセキュリティ機能です。この設定により、setuidバイナリやsudoコマンドを悪用した特権昇格攻撃を防止できます。
 
       [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
 
-      ## 特権昇格の概要
+      ## なぜ特権昇格の防止が必要か
+
+      非rootユーザーでPodを実行していても、それだけでは特権昇格を防げません。コンテナイメージ内に`sudo`や`passwd`のようなsetuidビット付きバイナリが含まれていると、非rootユーザーであってもそのバイナリの実行時に一時的にroot権限を取得できてしまいます。攻撃者がコンテナに侵入した場合、こうした仕組みを悪用してroot権限を奪い、コンテナブレイクアウト（コンテナの隔離を破ってホストへ影響を及ぼすこと）を試みる可能性があります。allowPrivilegeEscalationは、非rootでの実行強制とセットで設定することで、この「起動時は非rootでも実行時にrootへ戻れてしまう」経路を塞ぐための設定です。
 
       ### 特権昇格の仕組み
-      - プロセスが実行時により多くの権限を取得する仕組み
-      - setuidビット付きバイナリの実行時に権限が昇格
-      - sudoコマンドによる一時的な権限昇格
-      - 攻撃者が悪用する可能性のあるメカニズム
+      - 通常、Linuxのプロセスは実行したユーザーと同じ権限を引き継ぐ
+      - しかし、setuidビットが付与されたバイナリを実行すると、実行したユーザーではなく**バイナリの所有者（多くはroot）の権限**でプロセスが動作する
+      - sudoコマンドも同様に、設定に応じて実行ユーザーより高い権限を一時的に取得する仕組み
+      - 攻撃者はコンテナに侵入した後、これらの仕組みを悪用して権限昇格を狙うことが多い
 
       ### セキュリティリスク
       - コンテナブレイクアウトのリスク増大
@@ -467,21 +470,22 @@ issues:
       - ホストシステムへの影響拡大
       - マルウェアによる権限昇格攻撃
 
-      ## allowPrivilegeEscalationの動作
+      ## allowPrivilegeEscalationの動作原理
 
-      ### false設定時の効果
-      - setuidバイナリが特権を取得できない
-      - sudoコマンドが実行されても権限が昇格しない
-      - プロセスは起動時の権限レベルを維持
-      - 特権昇格攻撃を根本的に防止
+      ### allowPrivilegeEscalation: false (特権昇格を許可しない) 設定時の効果
+      - setuidバイナリを実行しても実効ユーザーIDが変わらない
+      - sudoコマンドを実行しても権限が昇格しない
+      - プロセスは起動時の権限レベルを維持したまま動作する
+      ### デフォルト値
+      - allowPrivilegeEscalationの**デフォルト値はtrue**であり、未設定の場合は特権昇格が許可された状態になる
 
-      ### デフォルト動作
-      - allowPrivilegeEscalationのデフォルト値はtrue
-      - runAsNonRoot: trueが設定されている場合は自動的にfalseになる
-      - 明示的にfalseを設定することが推奨
+      ### 設定時の注意点
+      - `runAsNonRoot`とは独立した設定であり、非rootユーザーでの実行を強制しても自動的にfalseにはならない。両方を明示的に設定する必要がある
 
       # プラクティス
       - frontendとbackendのSecurityContextに特権昇格防止の設定を追加する
+        - `allowPrivilegeEscalation: false`を設定する
+        - 設定後、Podが正常に起動し、アプリケーションが問題なく動作することを確認する
 
   - title: 特権のはく奪（Capability Drop）によるセキュリティ強化
     body: |
