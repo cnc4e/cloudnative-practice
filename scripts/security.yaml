@@ -987,32 +987,42 @@ issues:
 
   - title: ArgoCDにKSOPSを組み込む
     body: |
+      # ArgoCDにKSOPSを組み込む
       ArgoCDにKSOPS（Kustomize SOPS）を組み込むことで、SOPS暗号化されたKubernetesのSecretリソースを安全にGitOpsワークフローで管理できます。暗号化された機密情報をGitリポジトリに保存しながら、ArgoCDが自動的に復号化してクラスタにデプロイできるようになります。
 
       # 課題や必要性
-      - GitOpsワークフローでSecretを管理する際の機密性確保
-      - 暗号化されたSecretの自動復号化とデプロイ
-      - 開発・ステージング・本番環境での一貫したSecret管理
-      - CI/CDパイプラインでの手動復号化作業の削減
+      - 別issue「SOPSを使ったK8s Secretの暗号化」でSecretマニフェストをSOPSで暗号化してGitにコミットできるようになったが、クラスタに適用する際には別途SOPSコマンドで復号化する手順が必要になる
+      - ArgoCDは本来「Gitリポジトリ上のマニフェストをそのままクラスタに適用する」ことしか行わず、SOPS暗号化ファイルを復号化する機能は標準では持っていない。そのため、暗号化したままのSecretマニフェストをArgoCDに同期させても、暗号化された値がそのままクラスタに適用されてしまい正しく動作しない
+      - 復号化をCI等の別パイプラインで行う方法も考えられるが、「Gitの内容がそのままクラスタの状態になる」というGitOpsの原則から外れてしまい、復号化専用のパイプラインを別途維持する運用負荷が発生する
+      - 開発・ステージング・本番など複数環境でも同じ仕組みで一貫してSecretを復号化・デプロイしたい
 
       # 解決策
       - KSOPS統合によるSOPS暗号化Secretの自動復号化
-        - ArgoCDのrepo-serverにKSOPSプラグインを組み込む
+        - ArgoCDのrepo-server（Gitリポジトリの取得とマニフェストのビルドを担うコンポーネント）にKSOPSプラグインを組み込む
         - SOPS暗号化されたYAMLファイルの透過的な復号化
         - Kustomizeとの統合による柔軟な設定管理
       - External Secrets Operatorによる外部シークレット管理
+        - AWS Secrets Manager等の外部ストアとKubernetes Secretを同期する方式。Secret自体はGitに置かず外部ストア側で一元管理する
       - Sealed Secretsによる暗号化Secret管理
+        - 公開鍵暗号方式でSecretを暗号化し、クラスタ内のコントローラーだけが持つ秘密鍵で復号する方式
 
-      本プラクティスではKSOPSを採用します。既存のSOPSワークフローを活用しつつ、ArgoCDとの統合により完全に自動化されたGitOpsワークフローを実現できるためです。
+      本プラクティスではKSOPSを採用します。別issue「SOPSを使ったK8s Secretの暗号化」で構築済みのSOPS暗号化ワークフローとKMSキーをそのまま再利用できるため、新たなツールの学習コストや管理対象（外部ストアや別の鍵管理の仕組み）を増やすことなく、「復号化してクラスタに適用する」部分だけをArgoCDに自動化させられるからです。
 
       # 解決策の説明
       KSOPSはKustomizeの機能を拡張するプラグインで、SOPS暗号化されたファイルを透過的に復号化します。
 
       ## KSOPS の動作原理
-      - **Kustomize統合** - KustomizeのGenerator機能を使用してSOPS復号化を実行
-      - **透過的復号化** - ビルド時にSOPS暗号化ファイルを自動復号化
-      - **KMS統合** - AWS KMSキーを使用した暗号化・復号化
-      - **権限管理** - ArgoCDのサービスアカウントにKMSアクセス権限を付与
+      - **Kustomize統合** - Kustomizeには`generators`という拡張ポイントがあり、ビルド時に外部プラグインを呼び出してリソースを動的に生成できる。KSOPSはこの仕組みを利用し、SOPS暗号化ファイルを復号化した結果をSecretリソースとして生成する
+      - **透過的復号化** - ArgoCDはApplicationの同期時にKustomizeを実行してマニフェストをビルドするため、KustomizationにKSOPSのGeneratorを設定しておけば、Git上は暗号化されたファイルのままで、ArgoCDが生成・適用するマニフェストは復号化済みのSecretになる
+      - **KMS統合** - 復号化には、暗号化時に使用したAWS KMSキーへのアクセスが必要になる
+      - **権限管理** - KSOPSの実体はArgoCDのrepo-server内で動作するため、復号化処理を行うのはrepo-serverのServiceAccountであり、そのServiceAccountにKMSアクセス権限を付与する必要がある
+
+      ### なぜrepo-serverに組み込むのか
+      ArgoCDのコンポーネントのうち、Gitリポジトリの取得とマニフェストのビルド（Kustomize/Helm等の実行）を担うのはrepo-serverです。KSOPSのような「ビルド時にマニフェストを変換するプラグイン」は、このビルド処理が行われる場所、つまりrepo-serverのコンテナ内に組み込んでおかなければKustomize実行時に認識されません。
+
+      ### なぜPod IdentityとKMSのリソースベースポリシーの両方が必要か
+      - repo-serverのServiceAccountにIAM側で`kms:Decrypt`等を許可するだけでは復号化できません。KMSキーはデフォルトでは作成者（鍵管理者）のみがアクセス可能で、他のIAMプリンシパルからの操作はキー自体のリソースベースポリシーで明示的に許可されない限り拒否されるためです
+      - したがって「IAM側でrepo-serverのロールにKMS操作を許可する」「KMSキー側でそのロールからの呼び出しを許可する」の両方が揃って初めて復号化が可能になります
 
       実装手順：
       - SOPS暗号化されたSecretファイルをGitリポジトリに保存
@@ -1021,15 +1031,15 @@ issues:
       - Pod IdentityでArgoCDサービスアカウントにKMS権限を付与
 
       # プラクティス
-      
+
       - KSOPSをArgoCDに組み込む
         - KSOPSに対応したArgoCDの設定
           - [公式リポジトリ](https://github.com/viaduct-ai/kustomize-sops)を参考にArgoCDのrepo-serverをKSOPS対応版にアップグレード
-            - KSOPSだけでなくSOPSもインストールする
-            - ArgoCDのConfigmapを修正しKustomizeプライグインを有効化する
+            - KSOPSだけでなくSOPSもインストールする（KSOPSは内部でSOPSコマンドを呼び出して復号化を行うため、両方が必要）
+            - ArgoCDのConfigmapを修正しKustomizeプラグインを有効化する
         - Pod IdentityでArgoCDのrepo-serverにKMS権限を付与
           - SAは`argocd-repo-server`
-          - 権限は`kms:DescribeKey`と`kms:Decrypt`が最低限ついていればいい
+          - 権限は`kms:DescribeKey`と`kms:Decrypt`が最低限ついていればいい（最小権限の原則に従い、暗号化用の`kms:Encrypt`等は付与しない）
         - KMSキーのリソースベースポリシーでArgoCDのrepo-serverからの操作を許可する
         - SOPS暗号化Secretの作成とKustomization設定
           - プロジェクトルートに`.sops.yaml`を作成し、KMSキーで暗号化する設定をする
@@ -1052,9 +1062,12 @@ issues:
             files:
               - secret.yaml
             ```
-      - 動作確認
-        - ブランチをプッシュしSOPSで暗号化されたマニフェストがArgoCDで復号化されデプロイされること
-          - 動作確認のためArgoCDのApplication設定で同期ブランチを作業ブランチに変えてもいい
+
+      # 動作確認
+
+      - ブランチをプッシュしSOPSで暗号化されたマニフェストがArgoCDで復号化されデプロイされること
+        - 動作確認のためArgoCDのApplication設定で同期ブランチを作業ブランチに変えてもいい
+
   - title: Terraformにおける機密情報の管理
     body: |
       Terraformでは、機密情報を安全に管理するために注意が必要です。
